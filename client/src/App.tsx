@@ -1,25 +1,38 @@
 import { useState } from 'react'
 import './App.css'
 
+interface Category {
+  id: number
+  name: string
+}
+
 type SystemStatus = 'idle' | 'loading' | 'online' | 'offline'
 
 function App() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus>('idle')
+  const [categories, setCategories] = useState<Category[]>([])
 
   const checkSystem = async () => {
     setSystemStatus('loading')
+    setCategories([])
 
     try {
-      const response = await fetch('http://localhost:3000/api/health')
-      const health = await response.json()
+      const [healthResponse, categoriesResponse] = await Promise.all([
+        fetch('http://localhost:3000/api/health'),
+        fetch('http://localhost:3000/api/categories'),
+      ])
+      const health = await healthResponse.json()
+      const categoryList = await categoriesResponse.json()
 
-      if (!response.ok || health.status !== 'ok') {
+      if (!healthResponse.ok || !categoriesResponse.ok || health.status !== 'ok') {
         throw new Error('Health check failed')
       }
 
+      setCategories(categoryList)
       setSystemStatus('online')
     } catch {
       setSystemStatus('offline')
+      setCategories([])
     }
   }
 
@@ -41,7 +54,13 @@ function App() {
             <p className="mt-3 mb-0 text-muted" role="status">⏳ Loading…</p>
           )}
           {systemStatus === 'online' && (
-            <p className="mt-3 mb-0 text-success" role="status">System Status: Online</p>
+            <div className="mt-3">
+              <p className="mb-2 text-success" role="status">System Status: Online</p>
+              <p><strong>Supported Request Categories</strong></p>
+              <ul>
+                {categories.map((category) => <li key={category.id}>{category.name}</li>)}
+              </ul>
+            </div>
           )}
           {systemStatus === 'offline' && (
             <div className="alert alert-danger mt-3 mb-0" role="alert">
