@@ -9,6 +9,7 @@ dist/
 build/
 # prisma
 server/prisma/*.db
+server/generated/
 # logs & OS
 *.log
 .DS_Store

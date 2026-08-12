@@ -1,26 +1,27 @@
-import { useState } from 'react';
+import { useState } from 'react'
+import './App.css'
 
-type SystemStatus = 'idle' | 'loading' | 'online' | 'offline';
+type SystemStatus = 'idle' | 'loading' | 'online' | 'offline'
 
 function App() {
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>('idle');
+  const [systemStatus, setSystemStatus] = useState<SystemStatus>('idle')
 
   const checkSystem = async () => {
-    setSystemStatus('loading');
+    setSystemStatus('loading')
 
     try {
-      const response = await fetch('http://localhost:3000/api/health');
-      const health = await response.json();
+      const response = await fetch('http://localhost:3000/api/health')
+      const health = await response.json()
 
       if (!response.ok || health.status !== 'ok') {
-        throw new Error('Health check failed');
+        throw new Error('Health check failed')
       }
 
-      setSystemStatus('online');
+      setSystemStatus('online')
     } catch {
-      setSystemStatus('offline');
+      setSystemStatus('offline')
     }
-  };
+  }
 
   return (
     <main className="container py-5">
@@ -51,7 +52,7 @@ function App() {
         </div>
       </div>
     </main>
-  );
+  )
 }
 
-export default App;
+export default App
