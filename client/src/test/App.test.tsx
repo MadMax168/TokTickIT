@@ -36,3 +36,41 @@ describe('App', () => {
     expect(screen.getByText('System Status: Offline')).toBeInTheDocument();
   });
 });
+
+describe('UI-04: Category list displays', () => {
+  it('shows categories after successful response', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 1, name: 'Account and Access' },
+          { id: 2, name: 'Hardware' },
+          { id: 3, name: 'Software' },
+          { id: 4, name: 'Network' },
+        ],
+      } as Response);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Check System' }));
+
+    expect(await screen.findByText('Supported Request Categories')).toBeInTheDocument();
+    expect(screen.getByText('Account and Access')).toBeInTheDocument();
+  });
+});
+
+describe('UI-05: Categories from API not hardcoded', () => {
+  it('displays category name returned by mock', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 99, name: 'Mocked Category' }],
+      } as Response);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Check System' }));
+
+    expect(await screen.findByText('Mocked Category')).toBeInTheDocument();
+  });
+});
