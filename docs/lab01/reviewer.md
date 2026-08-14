@@ -17,7 +17,7 @@
 | Issue 1: Project Foundation | https://github.com/MadMax168/TokTickIT/pull/5 | Approved (after dependency fix) |
 | Issue 2: Health Check | https://github.com/MadMax168/TokTickIT/pull/6 | Approved |
 | Issue 3: Category Seed | https://github.com/MadMax168/TokTickIT/pull/7 | Approved |
-| Issue 4: Category List | https://github.com/MadMax168/TokTickIT/pull/8 | Pending |
+| Issue 4: Category List | https://github.com/MadMax168/TokTickIT/pull/8 | Approved |
 
 ---
 
@@ -57,10 +57,20 @@ Thanked peer for thorough review. No changes required.
 
 ### Issue 4
 **Comment from peer:**
-[FILL IN after peer completes review]
+Approved with three non-blocking observations:
+1. Category tests hit the real database — they only pass against a running seeded Postgres
+   instance, so the server test suite is not self-contained. The "exactly 4 items" check
+   would also break if the seed changes. Suggested mocking Prisma or documenting
+   that tests require a live DB.
+2. The categories route has no error handling — a down database returns an HTML 500
+   instead of JSON. The client handles it gracefully either way, flagged as a consistency issue.
+3. Minor: docs are split between docs/lab-01/ and docs/lab01/ — suggested picking one folder.
 
 **My Response:**
-[FILL IN after replying]
+Acknowledged all three points. Database-dependent tests are a known limitation for Lab 1 scope.
+Will add a note to tests.md documenting that server tests require a running seeded Postgres.
+Error handling on the categories route and Prisma mocking are noted as improvements
+for a future sprint. Fixed the docs folder inconsistency by standardising to docs/lab-01/.
 
 ---
 
@@ -68,7 +78,7 @@ Thanked peer for thorough review. No changes required.
 
 | Issue | PR Link | My Comment |
 |-------|---------|------------|
-| Issue 1 | [FILL IN: peer's PR URL] | Flagged version mismatch between package.json and lockfile. Asked why the versions were inconsistent. |
-| Issue 2 | [FILL IN: peer's PR URL] | Nothing to change. Approved. |
-| Issue 3 | [FILL IN: peer's PR URL] | Looks good. Approved. |
-| Issue 4 | [FILL IN: peer's PR URL] | All looks good. Approved. |
+| Issue 1 | https://github.com/ovenmakemeheat/toktickit/pull/44 | Flagged version mismatch between package.json and lockfile. Asked why the versions were inconsistent. |
+| Issue 2 | https://github.com/ovenmakemeheat/toktickit/pull/45 | Nothing to change. Approved. |
+| Issue 3 | https://github.com/ovenmakemeheat/toktickit/pull/46 | Looks good. Approved. |
+| Issue 4 | https://github.com/ovenmakemeheat/toktickit/pull/47 | All looks good. Approved. |
