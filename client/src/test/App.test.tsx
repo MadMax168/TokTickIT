@@ -15,17 +15,17 @@ describe('App', () => {
   });
 
   it('shows a loading state after Check System is clicked', () => {
-    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(() => new Promise(() => {}));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Check System' }));
 
     expect(screen.getByRole('status')).toHaveTextContent('⏳ Loading…');
-    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:3000/api/health');
+    expect(fetchSpy).toHaveBeenCalledWith('/api/health');
   });
 
   it('shows an error message when the health check rejects', async () => {
-    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Check System' }));
@@ -39,7 +39,7 @@ describe('App', () => {
 
 describe('UI-04: Category list displays', () => {
   it('shows categories after successful response', async () => {
-    vi.spyOn(global, 'fetch')
+    vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -61,7 +61,7 @@ describe('UI-04: Category list displays', () => {
 
 describe('UI-05: Categories from API not hardcoded', () => {
   it('displays category name returned by mock', async () => {
-    vi.spyOn(global, 'fetch')
+    vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) } as Response)
       .mockResolvedValueOnce({
         ok: true,

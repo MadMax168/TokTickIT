@@ -7,12 +7,17 @@ app.use(cors())
 app.use(express.json())
 
 app.get('/api/categories', async (_request, response) => {
-  const categories = await prisma.category.findMany({
-    orderBy: { id: 'asc' },
-    select: { id: true, name: true },
-  })
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { id: 'asc' },
+      select: { id: true, name: true },
+    })
 
-  response.json(categories)
+    response.json(categories)
+  } catch (error) {
+    console.error('Unable to load request categories', error)
+    response.status(503).json({ error: 'Categories service is unavailable' })
+  }
 })
 
 app.get('/api/health', (_request, response) => {
