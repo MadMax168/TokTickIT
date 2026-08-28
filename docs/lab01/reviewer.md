@@ -37,40 +37,43 @@ Added `prisma` and `dotenv` to server/package.json, updated `vite.config.ts` to 
 
 ### Issue 2
 **Comment from peer:**
-Two non-blocking observations:
-1. API URL is hardcoded to localhost:3000 in App.tsx — suggested moving to an env variable or Vite proxy.
-2. No client-side test for the happy path where status shows Online, only loading and failure states covered.
+Looks good, this fits the issue well. The endpoint returns the right payload, the Supertest checks cover both the status code and the body, and the button flows through loading, online, and offline nicely on the client. Tests for those states are there too.
 
-**My Response:**
-Acknowledged both points. Hardcoded URL is acceptable for local development in Lab 1 scope and will be addressed in a later sprint. Happy path test is noted as a gap to fill.
+Two small things, neither blocking. The API URL is hardcoded to localhost:3000 in App.tsx, so it's probably worth moving to an env variable or a Vite proxy at some point. And there's no client test for the happy path where the status actually shows "Online", just the loading and failure ones.
 
----
-
-### Issue 3
-**Comment from peer:**
-Approved without changes. Peer confirmed the four categories match the issue exactly, seed is idempotent, and disconnect in finally is correct. Reviewed by eye as no Postgres connection was available.
+Otherwise nothing to flag. Good to go from my side.
 
 **My Response:**
 Thanked peer for thorough review. No changes required.
 
 ---
 
-### Issue 4
+### Issue 3
 **Comment from peer:**
-Approved with three non-blocking observations:
-1. Category tests hit the real database — they only pass against a running seeded Postgres
-   instance, so the server test suite is not self-contained. The "exactly 4 items" check
-   would also break if the seed changes. Suggested mocking Prisma or documenting
-   that tests require a live DB.
-2. The categories route has no error handling — a down database returns an HTML 500
-   instead of JSON. The client handles it gracefully either way, flagged as a consistency issue.
-3. Minor: docs are split between docs/lab-01/ and docs/lab01/ — suggested picking one folder.
+This reads really well. The categories match the four from the issue exactly, the seed is idempotent so rerunning it is safe, and the disconnect in finally keeps the script from hanging. The model looks right too.
+
+Only catch is I couldn't run it without a Postgres connection, so I reviewed by eye rather than by executing. Nothing to change from me. Happy to approve.
 
 **My Response:**
-Acknowledged all three points. Database-dependent tests are a known limitation for Lab 1 scope.
-Will add a note to tests.md documenting that server tests require a running seeded Postgres.
-Error handling on the categories route and Prisma mocking are noted as improvements
-for a future sprint. Fixed the docs folder inconsistency by standardising to docs/lab-01/.
+Thanked peer naja.
+
+---
+
+### Issue 4
+**Comment from peer:**
+Nice work, this covers issue #4 cleanly. The categories route queries Prisma in the right order, the client fetches health and categories in parallel, and the list renders from real API data. The tests are thorough too, especially UI-05 proving the categories aren't hardcoded.
+
+A few things I noticed:
+
+The category tests hit the real database. They only pass against a running, seeded Postgres, so the server test suite isn't self-contained anymore. Also the "exactly 4 items" check breaks if the seed changes. Worth mocking Prisma or documenting that tests need a DB up.
+
+The categories route has no error handling, so a down database returns a default HTML 500 instead of JSON. The client handles it gracefully either way, just a consistency thing.
+
+Minor: the docs are split between docs/lab-01/ and docs/lab01/, might be nice to pick one folder.
+
+Nothing blocking. Good to go.
+**My Response:**
+I already remove docs/lab-01/ and update docs/lab01, Thanks naja.
 
 ---
 
