@@ -12,7 +12,7 @@ Tests are planned before implementation and cover unit, API/integration, UI comp
 | UNIT-02 | Unit | AC-04, AC-19 | Trimmed summary/description boundaries and priority validation | `server/tests/lab02/create-ticket.api.test.ts` | Planned |
 | UNIT-03 | Unit | AC-11, AC-12 | File extension/MIME, 5 MiB, and five-active-attachment rules | `server/tests/lab02/attachments.api.test.ts` | Planned |
 | UNIT-04 | Unit | AC-01, AC-17, AC-18 | Idempotent required Categories, Related Systems, and active/inactive Development Requester seed data | `server/tests/lab02/seed-data.unit.test.ts` | Pass |
-| API-01 | API/integration | AC-01, AC-15, AC-17 | Active requester endpoint excludes inactive; selector-safe error contract | `server/tests/lab02/my-tickets.api.test.ts` | Planned |
+| API-01 | API/integration | AC-01, AC-15, AC-17 | Active requester endpoint excludes inactive; selector-safe error contract | `server/tests/lab02/create-ticket.api.test.ts` | Planned |
 | API-02 | API/integration | AC-03, AC-04 | Valid create is 201; invalid fields are 400 and no row saves | `server/tests/lab02/create-ticket.api.test.ts` | Planned |
 | API-03 | API/integration | AC-06, AC-10 | Cross-requester list/detail is non-disclosing 404 | `server/tests/lab02/ticket-detail.api.test.ts` | Planned |
 | API-04 | API/integration | AC-07, AC-21 | Search/filter/sort/page applies only to owner; valid empty pages preserve metadata and malformed parameters are rejected | `server/tests/lab02/my-tickets.api.test.ts` | Planned |
@@ -22,7 +22,8 @@ Tests are planned before implementation and cover unit, API/integration, UI comp
 | API-08 | API/integration | AC-13, AC-22, AC-23 | Confirmed removal retains metadata and blocks download; invalid/unowned/already-removed requests are safe | `server/tests/lab02/attachments.api.test.ts` | Planned |
 | API-09 | API/integration | AC-18, AC-24 | Active reference-data-only responses and safe unexpected-error envelope | `server/tests/lab02/create-ticket.api.test.ts` | Planned |
 | UI-01 | UI component | AC-01, AC-02, AC-14, AC-17 | Selector gate, loading/empty/failure, continue/cancel, and requester switch clear/reload state | `client/src/lab-02/RequesterSelection.test.tsx` | Planned |
-| UI-02 | UI component | AC-03, AC-04, AC-05, AC-18, AC-19, AC-24 | Create success, reference/read-only states, field errors, preserved values, disabled busy submit, and retryable failure | `client/src/lab-02/CreateTicket.test.tsx` | Planned |
+| UI-02 | UI component | AC-01, AC-02, AC-14 | Select and Change Requester update in-memory context and clear requester-scoped state | `client/src/lab-02/RequesterSelection.test.tsx` | Planned |
+| UI-06 | UI component | AC-03, AC-04, AC-05, AC-18, AC-19, AC-24 | Create success, reference/read-only states, field errors, preserved values, disabled busy submit, and retryable failure | `client/src/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-03 | UI component | AC-07, AC-08 | Query controls, list results, empty-list versus no-results copy from same API shape | `client/src/lab-02/MyTickets.test.tsx` | Planned |
 | UI-04 | UI component | AC-09, AC-10 | Owned read-only detail and safe not-found state | `client/src/lab-02/RequesterTicketDetail.test.tsx` | Planned |
 | UI-05 | UI component | AC-11, AC-12, AC-13 | Attachment queued/invalid/uploaded/removed/unavailable behavior | `client/src/lab-02/AttachmentSection.test.tsx` | Planned |
@@ -44,11 +45,11 @@ The planned-test table includes all required levels: unit (`UNIT-*`), API/integr
 
 | AC | Planned tests |
 | --- | --- |
-| AC-01 | UNIT-04, API-01, UI-01, E2E-01 |
-| AC-02 | UI-01 |
-| AC-03 | UNIT-01, API-02, UI-02, E2E-01 |
-| AC-04 | UNIT-02, API-02, UI-02 |
-| AC-05 | UI-02 |
+| AC-01 | UNIT-04, API-01, UI-01, UI-02, E2E-01 |
+| AC-02 | UI-01, UI-02 |
+| AC-03 | UNIT-01, API-02, UI-06, E2E-01 |
+| AC-04 | UNIT-02, API-02, UI-06 |
+| AC-05 | UI-06 |
 | AC-06 | API-03, E2E-02 |
 | AC-07 | API-04, UI-03, E2E-01 |
 | AC-08 | API-05, UI-03, VIS-02 |
@@ -57,17 +58,17 @@ The planned-test table includes all required levels: unit (`UNIT-*`), API/integr
 | AC-11 | UNIT-03, API-07, UI-05, E2E-03 |
 | AC-12 | UNIT-03, API-07, UI-05, E2E-03 |
 | AC-13 | API-08, UI-05, VIS-02, E2E-03 |
-| AC-14 | UI-01, E2E-02 |
+| AC-14 | UI-01, UI-02, E2E-02 |
 | AC-15 | API-01, E2E-03 |
 | AC-16 | STYLE-01, STYLE-02, RESP-01, RESP-02, VIS-01, VIS-02 |
 | AC-17 | UNIT-04, API-01, UI-01 |
-| AC-18 | UNIT-04, API-09, UI-02 |
-| AC-19 | UNIT-02, UI-02 |
+| AC-18 | UNIT-04, API-09, UI-06 |
+| AC-19 | UNIT-02, UI-06 |
 | AC-20 | UNIT-01 |
 | AC-21 | API-04 |
 | AC-22 | API-06, API-08 |
 | AC-23 | API-08 |
-| AC-24 | API-09, UI-02, E2E-03 |
+| AC-24 | API-09, UI-06, E2E-03 |
 
 ## 5. Responsive and visual checklist
 

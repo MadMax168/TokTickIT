@@ -23,7 +23,7 @@ Header shows TokTickIT identity, My Tickets, Create Ticket, active-page state, c
 
 ## Requester Selection
 
-A centered surface contains TokTickIT title, testing-only explanation, active Requester dropdown, Continue, and Cancel. Load active Requesters from the API; show loading, no-active-requesters, and safe retryable error states. Continue is disabled until an active requester is selected. **Cancel is included**: it clears a selection and stays on this gate, because the Section 8.1 figure shows Cancel and no ticket screen is usable without context. Controls are keyboard accessible. On Continue, persist the ID in client context; the shell shows the name. Change Requester returns here, clears requester-scoped UI state, then reloads the new context.
+A centered surface contains TokTickIT title, testing-only explanation, active Requester dropdown, Continue, and Cancel. Load active Requesters from the API; show loading, no-active-requesters, and safe retryable error states. Continue is disabled until an active requester is selected. **Cancel is included**: it clears a selection and stays on this gate, because the Section 8.1 figure shows Cancel and no ticket screen is usable without context. Controls are keyboard accessible. On Continue, keep the selected ID in in-memory React context only; the shell shows the name. Change Requester returns here, clears requester-scoped UI state, then reloads the new context. Do not use browser storage.
 
 ## Create Ticket
 

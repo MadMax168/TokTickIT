@@ -140,4 +140,5 @@ The complete endpoint, header, validation, pagination, ownership, error, and sta
 - `Attachment.downloadUrl` is a relative API path, for example `/api/attachments/att_123/download`, not a full host URL. This keeps the API portable across development and deployment origins.
 - The Ticket Number suffix uses uppercase `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`; ambiguous `0/O/1/I` are excluded. It is six characters, with uniqueness enforced by the backend/database.
 - Development context is carried in `X-Development-Requester-Id` rather than a request-body owner field so all requester-scoped endpoints use one explicit, test-only convention. It is not a security credential.
+- The selected Development Requester exists only in in-memory React context. It is cleared on application reload and is never written to localStorage, sessionStorage, cookies, or another browser-storage mechanism.
 - The labsheet leaves field limits and query vocabulary to the contract; the limits and query rules in BR-07 and BR-12 are the approved Lab 2 choices.

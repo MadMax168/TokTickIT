@@ -12,7 +12,7 @@ Successful retrieval returns `200`; creation returns `201`; successful deletion-
 }
 ```
 
-`fields` is present only for field validation. Codes are `VALIDATION_ERROR` (400), `REQUESTER_CONTEXT_REQUIRED` (400), `UNSUPPORTED_MEDIA_TYPE` (415), `PAYLOAD_TOO_LARGE` (413), `NOT_FOUND` (404), `OWNERSHIP_DENIED` (404, deliberately non-disclosing), `CONFLICT` (409), `ATTACHMENT_UNAVAILABLE` (410), and `INTERNAL_ERROR` (500). Unexpected errors do not return stack traces, storage keys, or database details.
+`fields` is present only for field validation. Codes are `VALIDATION_ERROR` (400), `REQUESTER_CONTEXT_REQUIRED` (400), `REQUESTER_CONTEXT_INVALID` (400), `OWNERSHIP_DENIED` (404, deliberately non-disclosing), `CONFLICT` (409), `ATTACHMENT_UNAVAILABLE` (410), `UNSUPPORTED_MEDIA_TYPE` (415), `PAYLOAD_TOO_LARGE` (413), `REFERENCE_DATA_UNAVAILABLE` (503), `REFERENCE_DATA_FAILED` (500), and `INTERNAL_ERROR` (500). Unexpected errors do not return stack traces, storage keys, or database details.
 
 ## Reference data
 
@@ -24,7 +24,7 @@ No requester header. Returns active categories only.
 { "items": [{ "id": 1, "name": "Hardware" }] }
 ```
 
-Statuses: `200`, `500`.
+Statuses: `200`, `503` (`REFERENCE_DATA_UNAVAILABLE`), `500` (`REFERENCE_DATA_FAILED`).
 
 ### `GET /api/related-systems`
 
@@ -34,7 +34,7 @@ No requester header. Returns active systems only.
 { "items": [{ "id": 1, "name": "Corporate Laptop" }] }
 ```
 
-Statuses: `200`, `500`.
+Statuses: `200`, `503` (`REFERENCE_DATA_UNAVAILABLE`), `500` (`REFERENCE_DATA_FAILED`).
 
 ### `GET /api/development-requesters`
 
@@ -44,7 +44,7 @@ No requester header. Returns active test requesters only; inactive requesters ar
 { "items": [{ "id": 1, "name": "Aree Chai", "email": "aree@example.test" }] }
 ```
 
-Statuses: `200`, `500`.
+Statuses: `200`, `503` (`REFERENCE_DATA_UNAVAILABLE`), `500` (`REFERENCE_DATA_FAILED`).
 
 ## Tickets
 
