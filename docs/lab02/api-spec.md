@@ -56,20 +56,21 @@ Headers: `Content-Type: application/json`, `X-Development-Requester-Id`. Body:
 {
   "categoryId": 1,
   "relatedSystemId": 2,
+  "clientRequestId": "request_123",
   "summary": "Laptop battery drains quickly",
   "requestedPriority": "MEDIUM",
   "description": "Battery falls from 100% to 20% in one hour."
 }
 ```
 
-The header identifies the owner; `requesterId` in the body is not accepted. Validate positive active reference IDs, trimmed summary 1-160, trimmed description 1-4,000, and priority `LOW|MEDIUM|HIGH`. Returns `201` with:
+The header identifies the owner; `requesterId` in the body is not accepted. `clientRequestId` is required and unique for idempotent creation. Validate positive active reference IDs, trimmed summary 1-160, trimmed description 1-4,000, and priority `LOW|MEDIUM|HIGH`. Returns `201` with:
 
 ```json
 {
   "id": "ticket_123", "ticketNumber": "TT-20260901-2K7M9Q", "ticketDate": "2026-09-01T10:00:00.000Z",
   "requester": { "id": 1, "name": "Aree Chai" }, "category": { "id": 1, "name": "Hardware" },
   "relatedSystem": { "id": 2, "name": "Corporate Laptop" }, "summary": "Laptop battery drains quickly",
-  "requestedPriority": "MEDIUM", "itPriority": "MEDIUM", "currentStatus": "NEW",
+  "requestedPriority": "MEDIUM", "currentStatus": "NEW",
   "description": "Battery falls from 100% to 20% in one hour.", "attachments": [],
   "createdAt": "2026-09-01T10:00:00.000Z", "updatedAt": "2026-09-01T10:00:00.000Z"
 }
@@ -85,7 +86,7 @@ Search covers Ticket Number and Summary case-insensitively. Returns the same sha
 
 ```json
 {
-  "items": [{ "id": "ticket_123", "ticketNumber": "TT-20260901-2K7M9Q", "summary": "Laptop battery drains quickly", "category": { "id": 1, "name": "Hardware" }, "relatedSystem": { "id": 2, "name": "Corporate Laptop" }, "requestedPriority": "MEDIUM", "itPriority": "MEDIUM", "currentStatus": "NEW", "ticketDate": "2026-09-01T10:00:00.000Z", "updatedAt": "2026-09-01T10:00:00.000Z" }],
+  "items": [{ "id": "ticket_123", "ticketNumber": "TT-20260901-2K7M9Q", "summary": "Laptop battery drains quickly", "category": { "id": 1, "name": "Hardware" }, "relatedSystem": { "id": 2, "name": "Corporate Laptop" }, "requestedPriority": "MEDIUM", "currentStatus": "NEW", "ticketDate": "2026-09-01T10:00:00.000Z", "updatedAt": "2026-09-01T10:00:00.000Z" }],
   "page": 1, "pageSize": 10, "totalItems": 1, "totalPages": 1
 }
 ```
@@ -103,7 +104,7 @@ Attachment metadata shape:
 ```json
 {
   "id": "attachment_123", "displayName": "battery.png", "mimeType": "image/png", "sizeBytes": 43122,
-  "createdAt": "2026-09-01T10:05:00.000Z", "removedAt": null, "removalReason": null,
+  "uploadedAt": "2026-09-01T10:05:00.000Z", "removedAt": null, "removalReason": null,
   "downloadUrl": "/api/attachments/attachment_123/download", "isDownloadable": true
 }
 ```

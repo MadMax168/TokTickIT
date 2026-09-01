@@ -35,7 +35,7 @@ Top row: title, Create Ticket action, search, filters (Category, Related System,
 
 ## Ticket Detail
 
-Show breadcrumb/back action to My Tickets and a read-only information card: Ticket Number, Ticket Date, Requester, Category, Related System, Requested Priority badge, read-only IT Priority badge, Current Status badge, Summary, and Description. Do not show comments, notes, actions taken, owners, or lifecycle controls. A distinct Attachment section lists active/removed metadata and supports adding a permitted file, downloading an active file, and destructive soft removal only after confirmation/reason. Removed attachments remain metadata-only with a “Removed” text status and unavailable download/preview control. Detail not-found/ownership failure is safe and non-disclosing.
+Show breadcrumb/back action to My Tickets and a read-only information card: Ticket Number, Ticket Date, Requester, Category, Related System, Requested Priority badge, Current Status badge, Summary, and Description. Do not show IT Priority, comments, notes, actions taken, owners, or lifecycle controls. A distinct Attachment section lists active/removed metadata and supports adding a permitted file, downloading an active file, and destructive soft removal only after confirmation/reason. Removed attachments remain metadata-only with a “Removed” text status and unavailable download/preview control. Detail not-found/ownership failure is safe and non-disclosing.
 
 ## Responsive rules
 

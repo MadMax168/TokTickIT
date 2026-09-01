@@ -50,14 +50,14 @@ Provide a professional Zen Green ticketing experience: select a seeded active re
 ## 5. Business Rules
 
 - BR-01: The backend alone generates a unique Ticket Number in `TT-YYYYMMDD-XXXXXX` format.
-- BR-02: A newly created ticket has `currentStatus: NEW`, `itPriority: MEDIUM`, a server-set ticket date/created timestamp, and server-set updated timestamp. Lab 2 does not change either status or IT Priority.
+- BR-02: A newly created ticket has `currentStatus: NEW`, a server-set ticket date/created timestamp, and server-set updated timestamp. Lab 2 has no IT Priority field or IT Staff workflow.
 - BR-03: Development Requester selection is a temporary testing mechanism only; it is neither login nor authorization and is replaced by real authentication in Lab 3.
 - BR-04: Only active Requesters appear in the selector. If none exist, Continue is unavailable and an empty state is shown; a reference-data load failure shows a safe retryable error.
 - BR-05: The selected requester ID is retained in client context and sent on requester-scoped requests in `X-Development-Requester-Id`. The backend uses it as the ownership context; it never trusts a client-supplied ticket owner.
 - BR-06: Changing requester clears ticket lists, detail, query state, and pending attachment state before requester-specific data reloads.
 - BR-07: Ticket Summary is required after trim and must contain 1-160 characters; Description is required after trim and must contain 1-4,000 characters. Category, Related System, and Requested Priority are required.
 - BR-08: Requested Priority is exactly `LOW`, `MEDIUM`, or `HIGH`. Category and Related System IDs must identify active reference records.
-- BR-09: Ticket Number, Ticket Date, Requester, Current Status, and IT Priority are read-only. Frontend validation gives field-local feedback; backend repeats all validation. On failure, entered field values and locally selected files remain available for correction.
+- BR-09: Ticket Number, Ticket Date, Requester, and Current Status are read-only. Frontend validation gives field-local feedback; backend repeats all validation. On failure, entered field values and locally selected files remain available for correction.
 - BR-10: Submit is disabled while creation is in progress to prevent duplicate submission. A retry after an unknown network outcome requires user action and is not automatically replayed.
 - BR-11: List search is case-insensitive containment over Ticket Number and Summary. Supported filters are Category, Related System, Requested Priority, and Current Status; status is `NEW` only in Lab 2.
 - BR-12: List sort fields are `updatedAt`, `ticketDate`, `ticketNumber`, `summary`, and `requestedPriority`; default order is `updatedAt:desc` with `id:desc` as the deterministic secondary order. Pages are one-based and `pageSize` is 10, 20, or 50 (default 10).
@@ -66,7 +66,7 @@ Provide a professional Zen Green ticketing experience: select a seeded active re
 - BR-15: Active attachments are JPG/JPEG, PNG, WEBP, or PDF; each is at most 5 MiB; no ticket may have more than five active attachments.
 - BR-16: The server derives MIME type from validated upload content and stores an opaque server-generated storage key, never a user-supplied path. Display names are sanitized basenames.
 - BR-17: Attachment upload failure leaves the ticket intact and reports the individual failure; no partial Attachment database record is exposed. For creation, the ticket is committed first, then selected files upload individually; successful uploads remain and failed files can be retried.
-- BR-18: Soft removal requires explicit confirmation and a trimmed reason of 1-500 characters. It records `removedAt`, `removedByRequesterId`, and `removalReason`; the row remains in metadata, but its file/preview/download endpoint returns unavailable.
+- BR-18: Soft removal requires explicit confirmation and a trimmed reason of 1-500 characters. It records `removedAt` and `removalReason`; the row remains in metadata, but its file/preview/download endpoint returns unavailable.
 - BR-19: Attachment upload and removal update the ticket timestamp. Removal is an atomic metadata update; physical file deletion, if used, is deferred until it cannot invalidate the retained audit metadata.
 - BR-20: Missing, invalid, inactive, removed, or unexpected resources produce safe errors. The UI preserves safe entered data on recoverable failure and never exposes storage paths or stack traces.
 - BR-21: A requester-scoped request without a positive, active `X-Development-Requester-Id` is rejected before any ticket or attachment data is returned. The header is a test-context identifier, never a security credential.
@@ -82,14 +82,14 @@ The shell, Zen Green tokens, screen layouts, component states, attachment states
 
 ## 7. Data Changes
 
-Prisma models are `RequesterUser`, `Category`, `RelatedSystem`, `Ticket`, and `Attachment`.
+Prisma models are `DevelopmentRequester`, `Category`, `RelatedSystem`, `Ticket`, and `Attachment`.
 
-- `RequesterUser`: `id`, `name`, unique `email`, `isActive`, timestamps; one-to-many `tickets` and `removedAttachments`.
-- `Category` and `RelatedSystem`: `id`, unique `name`, `isActive`, timestamps; each has many tickets.
-- `Ticket`: `id`, unique `ticketNumber`, `ticketDate`, `requesterId`, `categoryId`, `relatedSystemId`, `summary`, `requestedPriority`, `itPriority`, `currentStatus`, `description`, timestamps; it has many attachments.
-- `Attachment`: `id`, `ticketId`, original/sanitized `displayName`, server `storageKey`, detected `mimeType`, `sizeBytes`, timestamps, nullable `removedAt`, `removedByRequesterId`, and `removalReason`.
+- `DevelopmentRequester`: `id`, `name`, unique `email`, `active`, timestamps; one-to-many `tickets`.
+- `Category` and `RelatedSystem`: `id`, unique `name`, `active`, timestamps; each has many tickets.
+- `Ticket`: `id`, unique `ticketNumber`, unique `clientRequestId`, `ticketDate`, `requesterId`, `categoryId`, `relatedSystemId`, `summary`, `requestedPriority`, `currentStatus`, `description`, timestamps; it has many attachments.
+- `Attachment`: `id`, `ticketId`, original/sanitized `displayName`, server `storageKey`, detected `mimeType`, `sizeBytes`, `uploadedAt`, nullable `removedAt`, and `removalReason`.
 
-Use enums `Priority { LOW MEDIUM HIGH }` and `TicketStatus { NEW }`. Foreign keys enforce the required relationships. Unique constraints apply to requester email, reference names, and ticket number. Indexes are `Ticket(requesterId, updatedAt, id)`, `Ticket(requesterId, categoryId)`, `Ticket(requesterId, relatedSystemId)`, `Ticket(requesterId, requestedPriority)`, `Attachment(ticketId, removedAt)`, and active-reference lookup indexes on `isActive`. The composite list index is justified because every list query is ownership-scoped and defaults to recent tickets. Migration adds the five models/enums and an idempotent seed with four fixed categories, at least six systems, four active requesters, and one inactive requester.
+Use enums `RequestedPriority { LOW MEDIUM HIGH }` and `TicketStatus { NEW }`. Foreign keys enforce the required relationships. Unique constraints apply to requester email, reference names, ticket number, and client request ID. Indexes are `Ticket(requesterId, ticketDate, id)`, `Ticket(requesterId, updatedAt, id)`, `Ticket(categoryId)`, `Ticket(relatedSystemId)`, `Ticket(requestedPriority)`, and `Attachment(ticketId, removedAt)`. The requester/recent-ticket indexes are justified because every list query is ownership-scoped and commonly sorted by date. Migration adds the five models/enums and an idempotent seed with four fixed categories, at least six systems, four active requesters, and one inactive requester.
 
 ## 8. API Contract summary
 
