@@ -39,6 +39,7 @@ export default async function requesterContext(
       return
     }
 
+    response.locals.developmentRequesterId = requester.id
     next()
   } catch {
     response.status(400).json({

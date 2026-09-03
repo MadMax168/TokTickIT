@@ -9,10 +9,19 @@ vi.mock('../src/prisma', () => ({
         { id: 3, name: 'Software' },
         { id: 4, name: 'Network' },
       ]),
+      findUnique: vi.fn(),
+    },
+    relatedSystem: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     developmentRequester: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+    },
+    ticket: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
     },
   },
 }))

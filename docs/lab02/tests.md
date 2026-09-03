@@ -36,8 +36,8 @@ Tests use seeded active Requesters A, B, C, and D plus one inactive Requester, t
 
 | Test ID | Requirement / AC | What it tests | Expected result | Automated test file | Final result |
 | --- | --- | --- | --- | --- | --- |
-| UNIT-01 | BR-01, AC-05 | Ticket Number format and uniqueness retry | Generates `TT-YYYYMMDD-XXXXXX` and retries a collision without returning a duplicate. | `server/tests/lab02/ticket-number.unit.test.ts` | Pending |
-| UNIT-02 | BR-09, BR-10, AC-06, AC-07 | Text normalization and field validation | Trims fields, accepts inclusive boundaries, and rejects empty, too short, too long, and invalid enum values. | `server/tests/lab02/ticket-validation.unit.test.ts` | Pending |
+| UNIT-01 | BR-01, AC-05 | Ticket Number format and uniqueness retry | Generates `TT-YYYYMMDD-XXXXXX` and retries a collision without returning a duplicate. | `server/tests/lab02/ticket-number.unit.test.ts` | Passed |
+| UNIT-02 | BR-09, BR-10, AC-06, AC-07 | Text normalization and field validation | Trims fields, accepts inclusive boundaries, and rejects empty, too short, too long, and invalid enum values. | `server/tests/lab02/ticket-validation.unit.test.ts` | Passed |
 | UNIT-03 | BR-14, BR-16, BR-17, AC-12 | Ticket query parser and deterministic ordering | Accepts documented parameters, applies defaults, and rejects invalid page, page size, filter, and sort values. | `server/tests/lab02/ticket-query.unit.test.ts` | Pending |
 | UNIT-04 | BR-18, BR-19, BR-20, BR-24, AC-18, AC-20 | Attachment policy | Accepts only permitted type/size/count combinations, generates safe storage keys, and validates removal reasons. | `server/tests/lab02/attachment-policy.unit.test.ts` | Pending |
 
@@ -45,10 +45,10 @@ Tests use seeded active Requesters A, B, C, and D plus one inactive Requester, t
 
 | Test ID | Requirement / AC | What it tests | Expected result | Automated test file | Final result |
 | --- | --- | --- | --- | --- | --- |
-| API-01 | FR-02, FR-16, BR-04, AC-02, AC-04 | Active reference and requester context | Active Categories, Related Systems, and Requesters are returned; inactive Requesters are absent; context failures are safe. | `server/tests/lab02/create-ticket.api.test.ts` | Pending |
-| API-02 | FR-07, BR-01, BR-02, BR-08, BR-11, AC-05 | Valid Ticket creation | Returns `201`, saves one Ticket, generates unique number/date, assigns the header Requester, and sets `NEW`. | `server/tests/lab02/create-ticket.api.test.ts` | Pending |
-| API-03 | BR-08, BR-09, BR-10, AC-07 | Create validation and inactive references | Invalid body, inactive Category/System, invalid context, and invalid priority return documented `400`/`404` with no Ticket. | `server/tests/lab02/create-ticket.api.test.ts` | Pending |
-| API-04 | BR-12, AC-08 | Idempotent create retry | Equivalent retry returns `200` for the original Ticket; changed payload with the same ID returns `409`; count remains one. | `server/tests/lab02/create-ticket.api.test.ts` | Pending |
+| API-01 | FR-02, FR-16, BR-04, AC-02, AC-04 | Active reference and requester context | Active Categories, Related Systems, and Requesters are returned; inactive Requesters are absent; context failures are safe. | `server/tests/lab02/create-ticket.api.test.ts` | Passed |
+| API-02 | FR-07, BR-01, BR-02, BR-08, BR-11, AC-05 | Valid Ticket creation | Returns `201`, saves one Ticket, generates unique number/date, assigns the header Requester, and sets `NEW`. | `server/tests/lab02/create-ticket.api.test.ts` | Passed |
+| API-03 | BR-08, BR-09, BR-10, AC-07 | Create validation and inactive references | Invalid body, inactive Category/System, invalid context, and invalid priority return documented `400`/`404` with no Ticket. | `server/tests/lab02/create-ticket.api.test.ts` | Passed |
+| API-04 | BR-12, AC-08 | Idempotent create retry | Equivalent retry returns `200` for the original Ticket; changed payload with the same ID returns `409`; count remains one. | `server/tests/lab02/create-ticket.api.test.ts` | Passed |
 | API-05 | BR-18, BR-19, BR-20, BR-21, AC-09, AC-10, AC-18 | Attachment upload after creation | Valid upload returns `201`; invalid file and storage failure are safe; a failed upload does not delete the Ticket. | `server/tests/lab02/attachments.api.test.ts` | Pending |
 | API-06 | FR-09, BR-07, AC-11 | Owned Ticket list | Requester A receives only A Tickets and cannot see B records through the list. | `server/tests/lab02/my-tickets.api.test.ts` | Pending |
 | API-07 | BR-14, BR-15, BR-16, BR-17, AC-12 | Search, filters, sorting, and pagination | Query parameters produce deterministic items and correct page metadata; invalid parameters return `400`. | `server/tests/lab02/my-tickets.api.test.ts` | Pending |
