@@ -39,12 +39,13 @@ export default async function requesterContext(
       return
     }
 
+    response.locals.developmentRequesterId = requester.id
     next()
   } catch {
-    response.status(400).json({
+    response.status(500).json({
       error: {
-        code: 'REQUESTER_CONTEXT_INVALID',
-        message: 'Development Requester context is invalid.',
+        code: 'TICKET_CREATE_FAILED',
+        message: 'Ticket could not be created.',
       },
     })
   }

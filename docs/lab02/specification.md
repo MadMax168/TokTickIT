@@ -1,144 +1,210 @@
-# Lab 2 Sprint Engineering Specification
+# Lab 2 engineering specification
 
-## 1. Sprint Goal
+Status: approved for implementation
 
-Deliver a responsive, requester-facing TokTickIT MVP in which a temporarily selected Development Requester can create and find only their own IT support tickets, view a read-only ticket detail, and manage permitted attachments. This selection is a Lab 2 test context, not authentication.
+Issue: #51 - Lab 2 - Sprint specification and test plan
 
-## 2. Stakeholder Request
+Source: [Lab 2 requirements](requirements/UTF-8_Lab_02_labsheet-1.pdf)
 
-Provide a professional Zen Green ticketing experience: select a seeded active requester, describe and classify a support problem, attach evidence, receive an official ticket number, and later locate and inspect that requester-owned ticket. The experience must be safe, responsive, testable, and reusable by later screens without introducing Lab 3 authentication or IT Staff workflows.
+This document is the implementation contract for the Lab 2 requester-facing increment. It is intentionally narrower than the full stakeholder handout and must be approved together with `tests.md`, `ui-spec.md`, and `api-spec.md` before product coding continues.
+
+## 1. Sprint goal
+
+Deliver a responsive requester-facing TokTickIT MVP in which a selected Development Requester can create an IT support ticket, receive a backend-generated Ticket Number, find only their own tickets, inspect ticket detail, and manage permitted attachments. The selector is a temporary testing context; it is not authentication.
+
+## 2. Stakeholder request
+
+The IT department needs a professional Zen Green experience for describing a problem, classifying it by Category and Related System, choosing a Requested Priority, attaching evidence, and submitting the request. The requester must then be able to find, search, filter, sort, paginate, and open their own tickets. Ticket detail must expose read-only ticket information and the permitted attachment lifecycle.
+
+The Lab 2 implementation uses seeded Development Requesters to simulate different users before Lab 3 introduces authentication. The selected requester is sent as an explicit test context and is used for ownership filtering. It must never be presented as secure identity or role-based authorization.
 
 ## 3. Scope
 
 ### Included
 
-- Development Requester selection, display, changing, and requester-scoped data reload.
-- Create Ticket, My Tickets, requester-owned Ticket Detail, and active attachment addition, metadata, download, and soft removal.
-- Reference-data loading, search, filters, sorting, pagination, validation, loading, failure, empty, and no-results states.
-- Zen Green reusable UI conventions, data design, API contract, and planned test evidence.
+- Development Requester Selection as a temporary testing context.
+- A reusable application shell with TokTickIT identity, current requester, My Tickets, Create Ticket, and Change Requester navigation.
+- Active Category, Related System, and Development Requester reference data.
+- Create Ticket with required fields, backend-generated Ticket Number, initial `NEW` status, validation, and separate attachment upload.
+- My Tickets with requester ownership, search, filtering, sorting, pagination, and loading, empty, no-results, and failure states.
+- Requester Ticket Detail with read-only ticket fields and requester-owned attachment operations.
+- Attachment metadata, upload, active download, and soft removal.
+- Zen Green tokens, reusable form/list/badge/state conventions, responsive layouts, keyboard access, and visual inspection.
+- Unit, API/integration, UI, style/responsive, visual, and E2E evidence.
 
-### Excluded
+### Explicitly excluded
 
-- Login/logout, passwords, hashing, sessions, tokens, authenticated identities, or real authorization.
-- IT Staff dashboards/queues, claiming/reassignment, or changing IT Priority.
-- Public Comments, Internal Notes, Actions Taken, and collaboration/work tracking.
-- Any status transition after the initial `NEW` status, including resolve, close, reopen, or cancel.
-- Administration of users, requesters, roles, categories, or related systems.
+- Authentication, login, logout, passwords, password hashing, sessions, tokens, authenticated identities, and real role-based authorization.
+- IT Staff dashboards or queues, ticket claiming, reassignment, IT Priority, and other staff-owner functions.
+- Public Comments, Internal Notes, Actions Taken, event logs, and work tracking.
+- Status changes after the initial `NEW` status, including resolving, closing, reopening, cancelling, or resolution confirmation.
+- Administrator management of users, Requesters, roles, Categories, or Related Systems.
+- Lab 3 identity integration. Lab 2 only leaves a documented seam for replacing the test context later.
 
-## 4. Functional Requirements
+## 4. Functional requirements
 
-- FR-01: The app shall require an active Development Requester selection before requester ticket screens are available and clearly label it as test-only.
-- FR-02: The app shall load active Categories, Related Systems, and Development Requesters from PostgreSQL-backed APIs.
-- FR-03: A selected Requester shall create one ticket with Category, Related System, Summary, Requested Priority, Description, and optional permitted attachments.
-- FR-04: The backend shall generate and return a unique official Ticket Number and system values on successful ticket creation.
-- FR-05: My Tickets shall return only tickets owned by the selected Requester, with search, filters, sorting, and pagination.
-- FR-06: The requester shall retrieve a Ticket Detail only when the selected Requester owns that ticket.
-- FR-07: The owner shall add a permitted attachment to an existing ticket, inspect attachment metadata, and download an active attachment.
-- FR-08: The owner shall soft-remove an active attachment with confirmation and a removal reason; its metadata remains visible but preview/download is blocked.
-- FR-09: Switching Requester shall clear requester-scoped view state and reload requester-specific ticket data.
-- FR-10: The UI shall provide meaningful loading, validation, success, failure, empty-list, and no-results feedback at supported viewports.
-- FR-11: The selector shall provide loading, no-active-requesters, API-failure, Continue, and Cancel states without allowing a requester screen to bypass selection.
-- FR-12: Create Ticket shall load active Categories and Related Systems and visually distinguish its system-generated/read-only values from requester-editable values.
-- FR-13: The application shall validate ticket fields on the client and server, preserve recoverable user input after failure, and prevent duplicate submissions while a request is pending.
-- FR-14: My Tickets shall present an empty-list state when the selected Requester owns no tickets and a no-results state only when active query controls return no matches.
-- FR-15: The ticket list API shall use the identical successful empty response shape for both the empty-list and no-results conditions.
-- FR-16: Ticket Detail shall render all ticket information read-only and shall not expose comments, notes, Actions Taken, IT Staff controls, or status-change controls.
-- FR-17: Attachment presentation shall distinguish queued, uploading, active, invalid/failed, removed, and unavailable states and keep removed metadata visible.
-- FR-18: The API shall return consistent safe error bodies and appropriate status codes for validation, missing/non-owned resources, file type/size, conflict, unavailable attachment, and unexpected failure.
-- FR-19: All requester screens shall meet Zen Green, keyboard-accessibility, and desktop/tablet/mobile responsive rules, with visual evidence planned.
+| ID | Requirement |
+| --- | --- |
+| FR-01 | The application presents a Development Requester Selection screen before requester-specific screens can be used. |
+| FR-02 | The selector loads active Development Requesters from PostgreSQL and excludes inactive Requesters. |
+| FR-03 | After selection, the shell displays the current Requester and provides a Change Requester action. |
+| FR-04 | Switching Requester reloads requester-specific data and prevents stale tickets or detail data from remaining visible. |
+| FR-05 | The shell provides My Tickets and Create Ticket navigation with a clear active-page indication. |
+| FR-06 | Create Ticket captures Category, Related System, Requested Priority, Summary, Description, and optional Attachments. |
+| FR-07 | The server validates a ticket request, generates the official Ticket Number and Ticket Date, saves the ticket, and starts it with status `NEW`. |
+| FR-08 | Create Ticket can upload permitted files after ticket creation and reports partial success if an upload fails. |
+| FR-09 | My Tickets retrieves only tickets owned by the selected Requester and supports documented search, filters, sorting, and pagination. |
+| FR-10 | My Tickets distinguishes an empty owned list from a no-results query and exposes recoverable loading and failure states. |
+| FR-11 | Ticket Detail retrieves one ticket only when it belongs to the selected Requester and renders its ticket fields read-only. |
+| FR-12 | Ticket Detail lists attachment metadata, including metadata for soft-removed files, without exposing removed file content. |
+| FR-13 | A selected Requester can upload permitted attachments to an owned ticket. |
+| FR-14 | A selected Requester can download an active attachment from an owned ticket. |
+| FR-15 | A selected Requester can soft-remove an owned attachment after the required confirmation and removal reason. |
+| FR-16 | The API rejects missing, inactive, or unknown requester context for requester-scoped operations. |
+| FR-17 | The API returns safe, documented errors for validation, ownership, missing resources, attachment constraints, conflicts, and unexpected failures. |
+| FR-18 | The UI uses the Zen Green specification and remains usable at desktop, tablet, and mobile sizes without horizontal scrolling. |
+| FR-19 | Required fields, validation messages, focus indicators, labels, disabled states, and icon labels are accessible at the user-observable boundary. |
 
-## 5. Business Rules
+## 5. Business rules
 
-- BR-01: The backend alone generates a unique Ticket Number in `TT-YYYYMMDD-XXXXXX` format.
-- BR-02: A newly created ticket has `currentStatus: NEW`, a server-set ticket date/created timestamp, and server-set updated timestamp. Lab 2 has no IT Priority field or IT Staff workflow.
-- BR-03: Development Requester selection is a temporary testing mechanism only; it is neither login nor authorization and is replaced by real authentication in Lab 3.
-- BR-04: Only active Requesters appear in the selector. If none exist, Continue is unavailable and an empty state is shown; a reference-data load failure shows a safe retryable error.
-- BR-05: The selected requester ID is retained in client context and sent on requester-scoped requests in `X-Development-Requester-Id`. The backend uses it as the ownership context; it never trusts a client-supplied ticket owner.
-- BR-06: Changing requester clears ticket lists, detail, query state, and pending attachment state before requester-specific data reloads.
-- BR-07: Ticket Summary is required after trim and must contain 1-160 characters; Description is required after trim and must contain 1-4,000 characters. Category, Related System, and Requested Priority are required.
-- BR-08: Requested Priority is exactly `LOW`, `MEDIUM`, or `HIGH`. Category and Related System IDs must identify active reference records.
-- BR-09: Ticket Number, Ticket Date, Requester, and Current Status are read-only. Frontend validation gives field-local feedback; backend repeats all validation. On failure, entered field values and locally selected files remain available for correction.
-- BR-10: Submit is disabled while creation is in progress to prevent duplicate submission. A retry after an unknown network outcome requires user action and is not automatically replayed.
-- BR-11: List search is case-insensitive containment over Ticket Number and Summary. Supported filters are Category, Related System, Requested Priority, and Current Status; status is `NEW` only in Lab 2.
-- BR-12: List sort fields are `updatedAt`, `ticketDate`, `ticketNumber`, `summary`, and `requestedPriority`; default order is `updatedAt:desc` with `id:desc` as the deterministic secondary order. Pages are one-based and `pageSize` is 10, 20, or 50 (default 10).
-- BR-13: An owned empty list and a valid query with no matches both return the identical API list shape: `items: []` and `totalItems: 0` with normal pagination metadata. The UI decides between empty-list and no-results copy by whether query controls are active.
-- BR-14: A selected Requester cannot retrieve, upload to, download from, or soft-remove attachments from another Requester's ticket. Ownership failures do not reveal the resource.
-- BR-15: Active attachments are JPG/JPEG, PNG, WEBP, or PDF; each is at most 5 MiB; no ticket may have more than five active attachments.
-- BR-16: The server derives MIME type from validated upload content and stores an opaque server-generated storage key, never a user-supplied path. Display names are sanitized basenames.
-- BR-17: Attachment upload failure leaves the ticket intact and reports the individual failure; no partial Attachment database record is exposed. For creation, the ticket is committed first, then selected files upload individually; successful uploads remain and failed files can be retried.
-- BR-18: Soft removal requires explicit confirmation and a trimmed reason of 1-500 characters. It records `removedAt` and `removalReason`; the row remains in metadata, but its file/preview/download endpoint returns unavailable.
-- BR-19: Attachment upload and removal update the ticket timestamp. Removal is an atomic metadata update; physical file deletion, if used, is deferred until it cannot invalidate the retained audit metadata.
-- BR-20: Missing, invalid, inactive, removed, or unexpected resources produce safe errors. The UI preserves safe entered data on recoverable failure and never exposes storage paths or stack traces.
-- BR-21: A requester-scoped request without a positive, active `X-Development-Requester-Id` is rejected before any ticket or attachment data is returned. The header is a test-context identifier, never a security credential.
-- BR-22: Seed execution is idempotent and supplies the four required Categories (Account and Access, Hardware, Software, Network), at least six Related Systems, at least four active Development Requesters, and at least one inactive Development Requester.
-- BR-23: Categories and Related Systems used for creation must be active at validation time; inactive reference data is neither selectable nor valid for new tickets, while historical ticket detail retains its saved reference names.
-- BR-24: Ticket Detail and attachment metadata list include removed attachment metadata for the owner, but no endpoint returns a preview/download URL or file bytes for a removed attachment.
-- BR-25: Active attachment download uses the detected MIME type and a sanitized `Content-Disposition` filename; the opaque storage key is never included in API output.
-- BR-26: Valid list parameters that select an empty page or no matching records return a normal successful pagination envelope; malformed parameters are rejected rather than silently coerced.
+| ID | Rule |
+| --- | --- |
+| BR-01 | The official Ticket Number is generated by the backend, is never accepted from the client, and is unique in the database. The format is `TT-YYYYMMDD-XXXXXX`, where the suffix is uppercase alphanumeric drawn from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (ambiguous characters `0`, `O`, `1`, `I` are excluded). |
+| BR-02 | Every new Ticket starts with current status `NEW`. Lab 2 does not expose a status-transition operation. |
+| BR-03 | The Development Requester selector is a testing mechanism, not authentication and not authorization. Its identifier is sent in `X-Development-Requester-Id`. |
+| BR-04 | Only Requesters with `active = true` are returned by the selector and accepted as new requester context. |
+| BR-05 | A requester context is required for Create Ticket, My Tickets, Ticket Detail, and all attachment operations. |
+| BR-06 | Requester switching clears the previous route-specific data before loading data for the new Requester. |
+| BR-07 | A ticket belongs to exactly one Development Requester. Every ticket and attachment read or mutation is scoped to the selected Requester. |
+| BR-08 | A ticket requires an active Category, an active Related System, a Requested Priority, a non-empty Summary, and a non-empty Description. |
+| BR-09 | Client text is trimmed before validation and persistence. Summary length is 5-120 characters inclusive; Description length is 20-4000 characters inclusive. |
+| BR-10 | Requested Priority accepts only `LOW`, `MEDIUM`, or `HIGH`. The API rejects all other values. |
+| BR-11 | Ticket Date is generated from the server clock and returned as an ISO 8601 UTC timestamp. The client cannot edit it. |
+| BR-12 | `clientRequestId` is a required UUID generated for one user submission intent. It is unique for a Ticket. A retry with the same key and equivalent payload returns the existing Ticket; reuse with a different payload returns a conflict. |
+| BR-13 | The Create button is disabled while the create request is pending, and the backend idempotency rule remains the authoritative duplicate protection. |
+| BR-14 | Ticket-list `search` is a case-insensitive contains search over Ticket Number and Summary after trimming. |
+| BR-15 | Ticket-list filters are Category, Related System, Requested Priority, and Current Status. Filter values must be valid IDs or enum values. |
+| BR-16 | Ticket-list sorting permits `ticketDate`, `updatedAt`, `ticketNumber`, or `summary`. The default is `ticketDate` descending with `id` descending as the tie-breaker. |
+| BR-17 | Ticket-list pages are one-based. The default page size is 10; permitted page sizes are 10, 20, and 50. Invalid page or page-size values return `400`. |
+| BR-18 | Allowed attachment types are JPG, JPEG, PNG, WEBP, and PDF. Type validation checks the file extension and server-validated MIME category. |
+| BR-19 | Each attachment is at most 5 MB. A Ticket can have at most five active attachments; soft-removed attachments do not count toward the active limit. |
+| BR-20 | The original filename is display metadata only. Storage uses a generated non-user-controlled key; path separators and unsafe filename characters are not used as storage paths. |
+| BR-21 | Attachment upload is separate from Ticket creation. A created Ticket remains saved if one or more uploads fail; the UI reports the partial failure and offers retry. |
+| BR-22 | Attachment metadata includes active and removed records. A removed file has `removedAt` and `removalReason`, remains visible as metadata, and cannot be downloaded or previewed. |
+| BR-23 | Only the selected Requester who owns the Ticket can upload, download, or remove its Attachments. Cross-Requester Ticket and Attachment access is returned as a non-disclosing `404`. |
+| BR-24 | Removing an Attachment requires a user confirmation step and a trimmed removal reason between 3 and 200 characters. |
+| BR-25 | No Lab 2 API or UI operation claims to authenticate a person. Lab 3 may replace the requester-context header with real identity without changing the ownership contract. |
+| BR-26 | Empty, no-results, loading, API-failure, validation, upload, removal, and responsive states are explicit states rather than silent blank screens. |
 
-## 6. UI Specification Summary
+## 6. UI specification summary
 
-The shell, Zen Green tokens, screen layouts, component states, attachment states, badges, list/card behavior, accessibility, and responsive rules are specified in [ui-spec.md](ui-spec.md). It covers the selection gate, Create Ticket, My Tickets, read-only Ticket Detail, and desktop/tablet/mobile behavior.
+The complete visual contract is in `ui-spec.md`. The application has five user-visible areas: Requester Selection, the shared shell, Create Ticket, My Tickets, and Requester Ticket Detail. Create Ticket uses a read-only requester context, active reference selectors, required Summary and Description fields, Requested Priority, and attachment selection. My Tickets uses search, filters, sorting, pagination, a Create Ticket action, and a table/card representation. Ticket Detail renders ticket values read-only and separates attachment actions from ticket information.
 
-## 7. Data Changes
+All screens use the Zen Green tokens, consistent labels, field heights, validation placement, focus indicators, visible button text, and explicit state messaging. Desktop uses a centered multi-column layout at 992px or wider; tablet uses practical two-column layout at 768-991px; mobile stacks fields and avoids horizontal scrolling below 768px.
 
-Prisma models are `DevelopmentRequester`, `Category`, `RelatedSystem`, `Ticket`, and `Attachment`.
+## 7. Data changes
 
-- `DevelopmentRequester`: `id`, `name`, unique `email`, `active`, timestamps; one-to-many `tickets`.
-- `Category` and `RelatedSystem`: `id`, unique `name`, `active`, timestamps; each has many tickets.
-- `Ticket`: `id`, unique `ticketNumber`, unique `clientRequestId`, `ticketDate`, `requesterId`, `categoryId`, `relatedSystemId`, `summary`, `requestedPriority`, `currentStatus`, `description`, timestamps; it has many attachments.
-- `Attachment`: `id`, `ticketId`, original/sanitized `displayName`, server `storageKey`, detected `mimeType`, `sizeBytes`, `uploadedAt`, nullable `removedAt`, and `removalReason`.
+### Models
 
-Use enums `RequestedPriority { LOW MEDIUM HIGH }` and `TicketStatus { NEW }`. Foreign keys enforce the required relationships. Unique constraints apply to requester email, reference names, ticket number, and client request ID. Indexes are `Ticket(requesterId, ticketDate, id)`, `Ticket(requesterId, updatedAt, id)`, `Ticket(categoryId)`, `Ticket(relatedSystemId)`, `Ticket(requestedPriority)`, and `Attachment(ticketId, removedAt)`. The requester/recent-ticket indexes are justified because every list query is ownership-scoped and commonly sorted by date. Migration adds the five models/enums and an idempotent seed with four fixed categories, at least six systems, four active requesters, and one inactive requester.
+| Model | Lab 2 design |
+| --- | --- |
+| `Category` | Extend the existing model with `active Boolean @default(true)`. Keep `name` unique. Existing Lab 1 category names remain valid and the reference endpoint returns active rows only. |
+| `RelatedSystem` | `id`, unique `name`, `active`, `createdAt`, and `updatedAt`. Seed at least six realistic systems. |
+| `DevelopmentRequester` | `id`, `name`, unique `email`, `active`, `createdAt`, and `updatedAt`. Seed at least four active and one inactive Requester. |
+| `Ticket` | `id`, unique `ticketNumber`, unique `clientRequestId`, `ticketDate`, `requesterId`, `categoryId`, `relatedSystemId`, `requestedPriority`, `summary`, `description`, `currentStatus`, `createdAt`, and `updatedAt`. |
+| `Attachment` | `id`, `ticketId`, generated `storageKey`, safe `displayName`, `mimeType`, `sizeBytes`, `uploadedAt`, nullable `removedAt`, and nullable `removalReason`. |
 
-## 8. API Contract summary
+`RequestedPriority` is the Prisma enum `LOW | MEDIUM | HIGH`. `TicketStatus` is the Prisma enum `NEW` for Lab 2. The API uses the same uppercase enum values and the UI supplies human-readable labels.
 
-The complete endpoint, header, validation, pagination, ownership, error, and status contract is in [api-spec.md](api-spec.md). It covers active reference data; ticket creation/list/detail; and attachment upload, metadata, download, and soft removal.
+### Relationships and constraints
 
-## 9. Acceptance Criteria
+- One Development Requester owns many Tickets; each Ticket has one Requester.
+- One Ticket has many Attachments; each Attachment belongs to one Ticket.
+- One Category and one Related System can be used by many Tickets.
+- Foreign keys are required for Ticket to Requester, Category, and Related System, and Attachment to Ticket.
+- Unique constraints apply to Category name, Related System name, Development Requester email, Ticket Number, and client request ID.
+- Index `Ticket(requesterId, ticketDate, id)` for owned list ordering.
+- Index `Ticket(requesterId, updatedAt, id)` for alternate ordering.
+- Index `Ticket(categoryId)`, `Ticket(relatedSystemId)`, and `Ticket(requestedPriority)` for supported filters.
+- Index `Attachment(ticketId, removedAt)` for active-count and metadata queries.
+- Soft removal is represented by nullable `removedAt`; attachment rows are never deleted by the Lab 2 remove operation.
+- The migration must preserve existing Category rows and mark them active.
 
-- AC-01: Given active Requesters are available, when a user selects one and continues, then the shell displays that requester and enables requester screens.
-- AC-02: Given no requester is selected, when a user navigates to requester ticket screens, then the selector is shown instead.
-- AC-03: Given valid required ticket fields, when the selected Requester submits, then one ticket is saved with a unique official Ticket Number and `NEW` status and the number is shown.
-- AC-04: Given invalid or missing ticket input, when submit is attempted, then field-local validation appears, no invalid ticket is saved, and entered values remain.
-- AC-05: Given a submitted ticket request is pending, when it is processing, then Submit is visibly busy and cannot be activated again.
-- AC-06: Given Requester A owns tickets, when Requester B is selected, then A's tickets are not listed or returned through B's list/detail requests.
-- AC-07: Given an owned list, when valid search, filters, sort, and pagination are applied, then only matching owned tickets and correct metadata are returned in the requested deterministic order.
-- AC-08: Given an owned list has no tickets or an active valid query has no matches, when the list API responds, then both responses use `items: []` and `totalItems: 0`; the UI shows empty-list or no-results copy according to active controls.
-- AC-09: Given the selected Requester owns a ticket, when its detail is opened, then its read-only ticket information and attachment metadata are shown.
-- AC-10: Given a requester does not own a ticket, when its detail or attachment route is requested, then ticket/attachment data is not returned.
-- AC-11: Given an owned ticket with fewer than five active attachments, when a permitted file at most 5 MiB is uploaded, then active metadata and a working download link are returned.
-- AC-12: Given an invalid type, oversize file, or five active attachments, when upload is attempted, then upload is rejected safely and existing ticket/attachments remain intact.
-- AC-13: Given an active owned attachment, when the requester confirms removal with a valid reason, then it is soft-removed, its metadata remains visible, and preview/download is unavailable.
-- AC-14: Given requester context changes, when the change completes, then stale requester-scoped list/detail/query state is cleared and the new context reloads.
-- AC-15: Given loading, API failure, or no active requesters, when the relevant screen is opened, then it presents a clear, safe, keyboard-accessible state with retry where applicable.
-- AC-16: Given desktop, tablet, and mobile viewports, when the required screens are inspected and navigated by keyboard, then layouts meet responsive rules, controls retain labels/focus states, and no horizontal overflow or clipped content occurs.
-- AC-17: Given the selector is loading, has no active Requesters, or its API fails, when the user opens it, then a clear state is shown and Continue cannot open requester ticket screens without a valid selection.
-- AC-18: Given Create Ticket opens for a selected Requester, when reference data loads, then only active Categories and Related Systems are selectable and requester/system-generated fields are visibly distinct.
-- AC-19: Given ticket text contains leading/trailing whitespace or boundary-length input, when it is submitted, then the backend applies the documented trim/limits and the client reports invalid fields locally.
-- AC-20: Given a ticket number is generated, when it is returned, then it matches `TT-YYYYMMDD-XXXXXX`, uses the approved unambiguous suffix alphabet, and is unique.
-- AC-21: Given a valid list request selects an empty page or produces no matches, when the API responds, then it returns normal pagination metadata; given malformed query parameters, then it returns a safe validation error rather than silently coercing them.
-- AC-22: Given an owned ticket has attachment metadata, when it is listed or downloaded, then active metadata exposes only a relative download path and safe filename; removed metadata exposes no download path or bytes.
-- AC-23: Given an attachment removal is unconfirmed, has an invalid reason, is already removed, or is not owned, when removal is attempted, then it is not newly removed and a safe appropriate error is returned.
-- AC-24: Given reference-data or ticket/attachment requests fail unexpectedly, when the UI receives the safe error response, then it does not expose internals and preserves recoverable entered values/files with a retry path where applicable.
+### Seed data
+
+The seed is repeat-safe and uses stable unique keys. It includes these Categories: Account and Access, Hardware, Software, and Network. It includes at least these Related Systems: Email, Campus Wi-Fi, VPN, LEB2 App, Grade Submission App, Printer, and Corporate Laptop. It includes at least four active Development Requesters and one inactive Requester using `.test` email addresses. The inactive Requester never appears in the selector.
+
+## 8. API contract summary
+
+The detailed endpoint contract, headers, query parameters, request/response shapes, errors, and status codes are in `api-spec.md`. The API is served under `/api` and remains importable through `server/src/app.ts`; listener startup stays in `server/src/index.ts`.
+
+| Capability | Route family |
+| --- | --- |
+| Active Categories | `GET /api/categories` |
+| Active Related Systems | `GET /api/related-systems` |
+| Active Development Requesters | `GET /api/development-requesters` |
+| Ticket creation | `POST /api/tickets` |
+| Owned ticket list | `GET /api/tickets` |
+| Owned ticket detail | `GET /api/tickets/:ticketId` |
+| Attachment upload | `POST /api/tickets/:ticketId/attachments` |
+| Attachment metadata | `GET /api/tickets/:ticketId/attachments` |
+| Active attachment download | `GET /api/tickets/:ticketId/attachments/:attachmentId/download` |
+| Attachment soft removal | `DELETE /api/tickets/:ticketId/attachments/:attachmentId` |
+
+## 9. Acceptance criteria
+
+| ID | Given / When / Then |
+| --- | --- |
+| AC-01 | Given the app has no selected Requester, when a requester-specific page is opened, then Requester Selection is shown and no requester data is requested. |
+| AC-02 | Given active and inactive seeded Requesters, when the selector loads, then only active Requesters are listed and the loading, empty, failure, and keyboard-accessible states are usable. |
+| AC-03 | Given Requester A is selected, when the user changes to Requester B, then the shell shows B and requester-specific list/detail data reloads without A data remaining visible. |
+| AC-04 | Given active Categories and Related Systems exist, when Create Ticket loads, then the controls show only active reference data and expose failures safely. |
+| AC-05 | Given valid ticket fields and a selected Requester, when the user submits once, then the API returns `201`, exactly one Ticket is saved, a unique Ticket Number is returned, and status is `NEW`. |
+| AC-06 | Given a missing or invalid required field, when the user submits, then a field-level message is shown and the create API is not called. |
+| AC-07 | Given invalid API input, inactive references, an invalid priority, or invalid text length, when the API receives it, then it returns documented `400` validation details and saves no Ticket. |
+| AC-08 | Given a repeated create request with the same client request ID and equivalent payload, when the request is retried, then the existing Ticket is returned without a duplicate. |
+| AC-09 | Given a created Ticket and permitted files, when the upload succeeds, then active attachment metadata is available and the Ticket remains accessible. |
+| AC-10 | Given one upload fails after Ticket creation, when the UI receives the failure, then the Ticket Number remains visible, the partial failure is clear, and retry is available. |
+| AC-11 | Given Requester A and B own different Tickets, when A loads My Tickets, then only A Tickets are returned. |
+| AC-12 | Given owned Tickets, when search, filters, sorting, and valid page parameters are used, then the result and metadata follow `api-spec.md` deterministically. |
+| AC-13 | Given no owned Tickets or a query with no matches, when My Tickets loads, then empty-list and no-results states are distinct and recoverable. |
+| AC-14 | Given a selected Requester, when My Tickets loads or fails, then loading and API-failure states are explicit and do not show stale data as current. |
+| AC-15 | Given an owned Ticket, when its detail is opened, then the Ticket fields are displayed read-only and attachment controls are visually separate. |
+| AC-16 | Given a Ticket owned by another Requester, when it is requested with the current context, then no Ticket data is returned and the API responds with non-disclosing `404`. |
+| AC-17 | Given active and removed Attachments, when detail metadata loads, then both metadata records are shown with their state and removed content is not previewable. |
+| AC-18 | Given an unsupported, oversized, or sixth active Attachment, when upload is attempted, then the client and API reject it with the documented error and no invalid active row is created. |
+| AC-19 | Given an active owned Attachment, when download is requested, then the file is returned with safe content headers. |
+| AC-20 | Given an owned active Attachment, when a valid removal confirmation and reason are submitted, then it is soft-removed, remains as metadata, and cannot be downloaded or previewed. |
+| AC-21 | Given an Attachment on another Requester's Ticket or a removed Attachment, when mutation or download is attempted, then the operation is rejected safely. |
+| AC-22 | Given the required screens, when viewed at desktop, tablet, and mobile widths, then there is no clipping, overlap, hidden control, or horizontal scrolling. |
+| AC-23 | Given keyboard and assistive-technology use, when the required screens are operated, then labels, required indicators, focus, button names, live states, and icon labels are available. |
+| AC-24 | Given server validation, missing-resource, ownership, upload, conflict, or unexpected failure, when the API responds, then the body is documented and contains no stack trace or storage path. |
+
+Every criterion maps to at least one planned test in `tests.md`.
 
 ## 10. Definition of Done
 
-- [ ] All included functional requirements and business rules are implemented; excluded Lab 2 work has not been added.
-- [ ] Every acceptance criterion has passing, traceable automated-test evidence; no required test is skipped, disabled, or commented out.
-- [ ] Unit, API/integration, UI, style, responsive, visual, and E2E tests pass from documented commands on final `main`.
-- [ ] Data migrations, idempotent seed data, ownership checks, validation, attachment soft removal, and safe errors conform to this contract.
-- [ ] Screens conform to `ui-spec.md`, including loading, empty/no-results, validation, success, failure, attachment, accessibility, and responsive states.
-- [ ] Visual inspection and desktop/tablet/mobile screenshots have been reviewed with no clipping, overlap, overflow, or inconsistent states.
-- [ ] `specification.md`, `api-spec.md`, `tests.md`, UI specification, README setup/use/test instructions, and required Lab 2 repository structure are current.
-- [ ] Changes were reviewed through the required issue, feature-branch, staging, peer-review, and release workflow; review comments are resolved.
-- [ ] The completed requester flow, ownership rejection, failure cases, and attachment lifecycle can be demonstrated from final `main`.
+- [ ] This specification and the companion test, UI, and API contracts are reviewed and approved before feature coding.
+- [ ] Every FR, BR, and AC has a stable identifier and a planned test path.
+- [ ] Implementation stays within the included scope and does not add authentication, IT Staff workflow, collaboration, or later status transitions.
+- [ ] Unit, API/integration, client UI, style/responsive, visual, and E2E tests are implemented from the plan; required tests are not skipped, disabled, or flaky.
+- [ ] `bun run verify` passes on the integrated Lab 2 result.
+- [ ] Desktop, tablet, and mobile screenshots and the visual checklist are reviewed against `ui-spec.md`.
+- [ ] The feature Pull Request links its Issue, the author answers every review comment, and the reviewing peer performs the merge into `lab2-staging`.
+- [ ] Integration testing passes on `lab2-staging` before the release Pull Request to `main`.
+- [ ] `reviewer.md`, `ai-use.md`, final evidence, and the required submission material are complete.
 
-## 11. Assumptions and Decisions
+## 11. Assumptions and decisions
 
-- The selector includes a **Cancel** button because the Section 8.1 figure shows one. It clears any temporary selection and remains on the selector with no navigation; a user cannot bypass the selection gate.
-- `Attachment.downloadUrl` is a relative API path, for example `/api/attachments/att_123/download`, not a full host URL. This keeps the API portable across development and deployment origins.
-- The Ticket Number suffix uses uppercase `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`; ambiguous `0/O/1/I` are excluded. It is six characters, with uniqueness enforced by the backend/database.
-- Development context is carried in `X-Development-Requester-Id` rather than a request-body owner field so all requester-scoped endpoints use one explicit, test-only convention. It is not a security credential.
-- The selected Development Requester exists only in in-memory React context. It is cleared on application reload and is never written to localStorage, sessionStorage, cookies, or another browser-storage mechanism.
-- The labsheet leaves field limits and query vocabulary to the contract; the limits and query rules in BR-07 and BR-12 are the approved Lab 2 choices.
+- The temporary requester context uses the `X-Development-Requester-Id` header because it keeps ownership scoping consistent across create, list, detail, and attachment operations while making the lack of authentication explicit.
+- Ticket creation and file upload are separate API operations so a failed file transfer cannot silently roll back a successfully created Ticket.
+- `clientRequestId` provides durable duplicate protection in addition to the disabled busy Submit button.
+- Search is limited to Ticket Number and Summary to keep the query predictable and fast; Category, Related System, Priority, and Status are filters.
+- The default list page size is 10 and the default sort is newest Ticket Date first, with deterministic ID tie-breaking.
+- A removal reason is required because the handout requires the removal-reason behavior to be defined; the UI must confirm before calling the API.
+- Local development may use a storage adapter under an ignored directory, but the database stores only generated keys and safe metadata. The adapter boundary must remain replaceable for object storage later.
+- The API returns uppercase enum values; the UI maps them to readable labels such as `New`, `Low`, `Medium`, and `High`.
+- `updatedAt` changes for Ticket field updates and attachment lifecycle changes that affect the Ticket detail; the Ticket list exposes it as `lastUpdated`.
+- The Requester Selection screen includes both a Cancel action and a Continue action (matching the labsheet's illustrative screenshot). Cancel clears the in-progress selection and keeps the user on the selector; there is no prior screen to return to in Lab 2, since the selector is the application's entry point.
+- `downloadUrl` in Attachment Metadata is a relative path scoped to the API base (`/api/tickets/:ticketId/attachments/:attachmentId/download`), not an absolute or signed URL. The client resolves it against the same origin as the rest of the API.
+- Requester context selected via the Development Requester Selector is held in in-memory React state/context only. It is not persisted to `localStorage`, `sessionStorage`, or cookies, so that it cannot be mistaken for a session and does not survive a page reload — reinforcing that it is a testing mechanism, not authentication (BR-03).
