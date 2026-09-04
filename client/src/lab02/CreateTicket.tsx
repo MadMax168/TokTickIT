@@ -48,7 +48,7 @@ export default function CreateTicket({ onBack }: { onBack: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [ticket, setTicket] = useState<TicketResult | null>(null)
-  const [clientRequestId] = useState(createClientRequestId)
+  const [clientRequestId, setClientRequestId] = useState(createClientRequestId)
   const formRef = useRef<HTMLFormElement>(null)
 
   const loadReferences = async () => {
@@ -139,6 +139,15 @@ export default function CreateTicket({ onBack }: { onBack: () => void }) {
     setErrors((current) => ({ ...current, [field]: undefined }))
   }
 
+  const startNewTicket = () => {
+    setTicket(null)
+    setValues(EMPTY_VALUES)
+    setErrors({})
+    setAttachments([])
+    setFormError('')
+    setClientRequestId(createClientRequestId())
+  }
+
   if (!requester) return null
 
   return (
@@ -156,7 +165,7 @@ export default function CreateTicket({ onBack }: { onBack: () => void }) {
           <label>Ticket Number<input readOnly value={ticket?.ticketNumber ?? 'Generated after creation'} /></label>
           <label>Ticket Date<input readOnly value={ticket?.ticketDate ?? 'Generated after creation'} /></label>
         </div>
-        <fieldset disabled={referenceState !== 'ready' || isSubmitting}>
+        <fieldset disabled={referenceState !== 'ready' || isSubmitting || Boolean(ticket)}>
           <legend>Classification</legend>
           <label htmlFor="categoryId">Category <span aria-hidden="true">*</span></label>
           <select id="categoryId" aria-label="Category" aria-describedby={errors.categoryId ? 'categoryId-error' : undefined} aria-invalid={Boolean(errors.categoryId)} required value={values.categoryId} onChange={(event) => updateValue('categoryId', event.target.value)}>
@@ -188,12 +197,12 @@ export default function CreateTicket({ onBack }: { onBack: () => void }) {
             </div>
           ))}
         </fieldset>
-        {ticket && <section className="create-ticket-success" role="status"><strong>{ticket.ticketNumber}</strong><p>Ticket created successfully. Upload results are shown above.</p></section>}
+        {ticket && <section className="create-ticket-success" role="status"><strong>{ticket.ticketNumber}</strong><p>Ticket created successfully. Upload results are shown above.</p><button type="button" onClick={startNewTicket}>Create another ticket</button></section>}
         {attachments.filter(({ error }) => error?.endsWith('could not be uploaded.')).map(({ file }) => (
           <button key={file.name} type="button" onClick={() => ticket && void uploadFiles(ticket.id, [file])}>Retry upload for {file.name}</button>
         ))}
         <div className="create-ticket-actions">
-          <button type="submit" disabled={referenceState !== 'ready' || isSubmitting}>{isSubmitting ? 'Submitting…' : formError ? 'Retry Submit' : 'Submit'}</button>
+          <button type="submit" disabled={referenceState !== 'ready' || isSubmitting || Boolean(ticket)}>{isSubmitting ? 'Submitting…' : formError ? 'Retry Submit' : 'Submit'}</button>
           <button type="button" onClick={onBack}>Back to requester home</button>
         </div>
       </form>

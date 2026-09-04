@@ -115,4 +115,24 @@ describe('UI-03 through UI-05: Create Ticket', () => {
     expect(await screen.findByText('evidence.pdf could not be uploaded.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Retry upload for evidence.pdf' })).toBeInTheDocument()
   })
+
+  it('locks a successful submission and starts a fresh idempotency intent only on request', async () => {
+    const fetchSpy = mockApi()
+    render(<RequesterApplication />)
+
+    await openCreateTicket()
+    fillValidTicket()
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+    await screen.findByText('TT-20260904-ABCDEF')
+    const submitButton = screen.getByRole('button', { name: 'Submit' })
+    expect(submitButton).toBeDisabled()
+    fireEvent.click(submitButton)
+    expect(fetchSpy.mock.calls.filter(([url]) => url === '/api/tickets')).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create another ticket' }))
+    expect(screen.getByLabelText('Summary')).toHaveValue('')
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeEnabled()
+    expect(screen.queryByText('TT-20260904-ABCDEF')).not.toBeInTheDocument()
+  })
 })
