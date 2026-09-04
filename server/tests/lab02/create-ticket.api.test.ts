@@ -78,6 +78,70 @@ describe('API-01: Development Requesters', () => {
   })
 })
 
+describe('API-01: Related Systems', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('returns only active Related Systems in ascending ID order', async () => {
+    vi.mocked(prisma.relatedSystem.findMany).mockResolvedValue([
+      { id: 2, name: 'Campus Wi-Fi' },
+      { id: 4, name: 'LEB2 App' },
+    ] as never)
+
+    const response = await request(app).get('/api/related-systems')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual([
+      { id: 2, name: 'Campus Wi-Fi' },
+      { id: 4, name: 'LEB2 App' },
+    ])
+    expect(prisma.relatedSystem.findMany).toHaveBeenCalledWith({
+      where: { active: true },
+      orderBy: { id: 'asc' },
+      select: { id: true, name: true },
+    })
+  })
+
+  it.each([
+    [Object.assign(new Error('database unavailable'), { code: 'P1001' }), 503, 'REFERENCE_DATA_UNAVAILABLE'],
+    [new Error('unexpected database failure'), 500, 'REFERENCE_DATA_FAILED'],
+  ])('returns the documented safe error when Related Systems fail to load', async (failure, status, code) => {
+    vi.mocked(prisma.relatedSystem.findMany).mockRejectedValue(failure)
+
+    const response = await request(app).get('/api/related-systems')
+
+    expect(response.status).toBe(status)
+    expect(response.body).toEqual({ error: { code, message: expect.any(String) } })
+  })
+})
+
+describe('API-01: Categories', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('returns only active Categories in ascending ID order', async () => {
+    vi.mocked(prisma.category.findMany).mockResolvedValue([
+      { id: 1, name: 'Account and Access' },
+      { id: 3, name: 'Software' },
+    ] as never)
+
+    const response = await request(app).get('/api/categories')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual([
+      { id: 1, name: 'Account and Access' },
+      { id: 3, name: 'Software' },
+    ])
+    expect(prisma.category.findMany).toHaveBeenCalledWith({
+      where: { active: true },
+      orderBy: { id: 'asc' },
+      select: { id: true, name: true },
+    })
+  })
+})
+
 describe('requester-context middleware', () => {
   const contextApp = express()
   contextApp.get('/context-check', requesterContext, (_request, response) => {
