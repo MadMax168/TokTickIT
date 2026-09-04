@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRequesterContext } from './requester-context'
 import { uploadTicketAttachments, type AttachmentUploadResult } from './ticket-uploads'
+import AttachmentSection from './AttachmentSection'
 import './create-ticket.css'
 
 type ReferenceItem = { id: number; name: string }
@@ -206,6 +207,7 @@ export default function CreateTicket({ onBack }: { onBack: () => void }) {
           <button type="button" onClick={onBack}>Back to requester home</button>
         </div>
       </form>
+      {ticket && <AttachmentSection ticketId={ticket.id} requesterId={requester.id} />}
     </section>
   )
 }
