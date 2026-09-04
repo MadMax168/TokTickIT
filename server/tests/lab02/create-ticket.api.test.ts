@@ -211,6 +211,21 @@ describe('API-03: Create Ticket validation', () => {
     expect(prisma.ticket.create).not.toHaveBeenCalled()
   })
 
+  it('returns a safe server failure when requester-context lookup fails', async () => {
+    vi.mocked(prisma.developmentRequester.findUnique).mockRejectedValue(new Error('database unavailable'))
+
+    const response = await request(app)
+      .post('/api/tickets')
+      .set('X-Development-Requester-Id', '7')
+      .send(validInput)
+
+    expect(response.status).toBe(500)
+    expect(response.body).toEqual({
+      error: { code: 'TICKET_CREATE_FAILED', message: expect.any(String) },
+    })
+    expect(prisma.ticket.create).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['category', null, { id: 2, active: true }, 'CATEGORY_NOT_FOUND'],
     ['category', { id: 1, active: false }, { id: 2, active: true }, 'CATEGORY_NOT_FOUND'],
