@@ -36,13 +36,26 @@ export default function AttachmentSection({ ticketId, requesterId }: { ticketId:
     if (!response.ok) { setMessage('Attachment could not be removed.'); return }
     setRemoving(null); setReason(''); setMessage('Attachment removed.'); await load()
   }
+  const download = async (item: Attachment) => {
+    if (!item.downloadUrl) return
+    try {
+      const response = await fetch(item.downloadUrl, { headers: { 'X-Development-Requester-Id': String(requesterId) } })
+      if (!response.ok) throw new Error()
+      const objectUrl = URL.createObjectURL(await response.blob())
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = item.displayName
+      link.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch { setMessage(`${item.displayName} could not be downloaded.`) }
+  }
   return <section aria-labelledby="attachments-heading"><h2 id="attachments-heading">Attachments</h2>
     <p>Accepted: JPG, JPEG, PNG, WEBP, or PDF. Maximum 5 MB per file; five active files per Ticket.</p>
     <label htmlFor="attachment-upload">Upload attachments</label><input id="attachment-upload" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" onChange={(event) => void upload(event.target.files)} disabled={state === 'loading'} />
     {state === 'loading' && <p role="status">Loading attachments…</p>}{state === 'error' && <p role="alert">Attachments are unavailable. <button onClick={() => void load()}>Retry</button></p>}
     {message && <p role="status">{message}</p>}
     <ul>{items.map((item) => <li key={item.id}><strong>{item.displayName}</strong> ({item.mimeType}, {item.sizeBytes} bytes) — uploaded {item.uploadedAt}
-      {item.isActive ? <><a href={item.downloadUrl ?? undefined} download aria-label={`Download ${item.displayName}`}>Download</a><button onClick={() => setRemoving(item)} aria-label={`Remove ${item.displayName}`}>Remove</button></> : <span> Removed{item.removalReason ? `: ${item.removalReason}` : ''}. Download unavailable.</span>}</li>)}</ul>
+      {item.isActive ? <><button type="button" onClick={() => void download(item)} aria-label={`Download ${item.displayName}`}>Download</button><button onClick={() => setRemoving(item)} aria-label={`Remove ${item.displayName}`}>Remove</button></> : <span> Removed{item.removalReason ? `: ${item.removalReason}` : ''}. Download unavailable.</span>}</li>)}</ul>
     {removing && <div role="dialog" aria-labelledby="remove-heading"><h3 id="remove-heading">Remove {removing.displayName}?</h3><label htmlFor="removal-reason">Removal reason</label><textarea id="removal-reason" value={reason} onChange={(event) => setReason(event.target.value)} /><button onClick={() => void remove()}>Confirm removal</button><button onClick={() => setRemoving(null)}>Cancel</button></div>}
   </section>
 }
