@@ -104,6 +104,11 @@ function ticketError(response: express.Response, status: number, code: string, m
   response.status(status).json({ error: { code, message } })
 }
 
+function listContextFailure(_request: express.Request, response: express.Response, next: express.NextFunction) {
+  response.locals.requesterContextFailure = { code: 'TICKET_LIST_FAILED', message: 'Tickets could not be loaded.' }
+  next()
+}
+
 const ticketDetailInclude = {
   requester: { select: { id: true, name: true } },
   category: { select: { id: true, name: true } },
@@ -190,6 +195,130 @@ app.post('/api/tickets', requesterContext, async (request, response) => {
     response.status(201).json(ticketDetail(ticket))
   } catch {
     ticketError(response, 500, 'TICKET_CREATE_FAILED', 'Ticket could not be created.')
+  }
+})
+
+type TicketListQuery = {
+  search: string
+  categoryId?: number
+  relatedSystemId?: number
+  requestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH'
+  currentStatus?: 'NEW'
+  sortBy: 'ticketDate' | 'updatedAt' | 'ticketNumber' | 'summary'
+  sortDirection: 'asc' | 'desc'
+  page: number
+  pageSize: 10 | 20 | 50
+}
+
+function singleQueryValue(value: unknown) {
+  return typeof value === 'string' ? value : undefined
+}
+
+function parsePositiveInteger(value: string | undefined) {
+  return value !== undefined && /^\d+$/.test(value) && Number(value) > 0 && Number.isSafeInteger(Number(value))
+    ? Number(value)
+    : undefined
+}
+
+function parseTicketListQuery(query: express.Request['query']): TicketListQuery | null {
+  const searchValue = singleQueryValue(query.search)
+  const categoryValue = singleQueryValue(query.categoryId)
+  const relatedSystemValue = singleQueryValue(query.relatedSystemId)
+  const priorityValue = singleQueryValue(query.requestedPriority)
+  const statusValue = singleQueryValue(query.currentStatus)
+  const sortByValue = singleQueryValue(query.sortBy)
+  const directionValue = singleQueryValue(query.sortDirection)
+  const pageValue = singleQueryValue(query.page)
+  const pageSizeValue = singleQueryValue(query.pageSize)
+  if (Object.values(query).some((value) => Array.isArray(value))) return null
+
+  const search = (searchValue ?? '').trim()
+  const categoryId = categoryValue === undefined ? undefined : parsePositiveInteger(categoryValue)
+  const relatedSystemId = relatedSystemValue === undefined ? undefined : parsePositiveInteger(relatedSystemValue)
+  const page = pageValue === undefined ? 1 : parsePositiveInteger(pageValue)
+  const pageSize = pageSizeValue === undefined ? 10 : parsePositiveInteger(pageSizeValue)
+  const priorities = ['LOW', 'MEDIUM', 'HIGH'] as const
+  const sortFields = ['ticketDate', 'updatedAt', 'ticketNumber', 'summary'] as const
+  const directions = ['asc', 'desc'] as const
+
+  if (
+    search.length > 120 ||
+    (categoryValue !== undefined && categoryId === undefined) ||
+    (relatedSystemValue !== undefined && relatedSystemId === undefined) ||
+    page === undefined ||
+    ![10, 20, 50].includes(pageSize ?? 0) ||
+    (priorityValue !== undefined && !priorities.includes(priorityValue as (typeof priorities)[number])) ||
+    (statusValue !== undefined && statusValue !== 'NEW') ||
+    (sortByValue !== undefined && !sortFields.includes(sortByValue as (typeof sortFields)[number])) ||
+    (directionValue !== undefined && !directions.includes(directionValue as (typeof directions)[number]))
+  ) return null
+
+  return {
+    search,
+    categoryId,
+    relatedSystemId,
+    requestedPriority: priorityValue as TicketListQuery['requestedPriority'],
+    currentStatus: statusValue as TicketListQuery['currentStatus'],
+    sortBy: (sortByValue ?? 'ticketDate') as TicketListQuery['sortBy'],
+    sortDirection: (directionValue ?? 'desc') as TicketListQuery['sortDirection'],
+    page,
+    pageSize: pageSize as TicketListQuery['pageSize'],
+  }
+}
+
+function ticketSummary(ticket: Omit<TicketDetailRecord, 'description' | 'createdAt' | 'attachments' | 'requesterId'>) {
+  return {
+    id: ticket.id,
+    ticketNumber: ticket.ticketNumber,
+    ticketDate: ticket.ticketDate.toISOString(),
+    requester: ticket.requester,
+    category: ticket.category,
+    relatedSystem: ticket.relatedSystem,
+    requestedPriority: ticket.requestedPriority,
+    summary: ticket.summary,
+    currentStatus: ticket.currentStatus,
+    lastUpdated: ticket.updatedAt.toISOString(),
+  }
+}
+
+app.get('/api/tickets', listContextFailure, requesterContext, async (request, response) => {
+  const query = parseTicketListQuery(request.query)
+  if (!query) {
+    ticketError(response, 400, 'TICKET_QUERY_INVALID', 'Ticket query is invalid.')
+    return
+  }
+  const requesterId = response.locals.developmentRequesterId as number
+  const where = {
+    requesterId,
+    ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }),
+    ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }),
+    ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }),
+    ...(query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }),
+    ...(query.search === '' ? {} : { OR: [
+      { ticketNumber: { contains: query.search, mode: 'insensitive' as const } },
+      { summary: { contains: query.search, mode: 'insensitive' as const } },
+    ] }),
+  }
+  try {
+    const [totalItems, tickets] = await Promise.all([
+      prisma.ticket.count({ where }),
+      prisma.ticket.findMany({
+        where,
+        orderBy: [{ [query.sortBy]: query.sortDirection }, { id: 'desc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: {
+          id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, currentStatus: true, updatedAt: true,
+          requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } },
+        },
+      }),
+    ])
+    response.status(200).json({
+      items: tickets.map(ticketSummary), page: query.page, pageSize: query.pageSize, totalItems,
+      totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize),
+    })
+  } catch {
+    ticketError(response, 500, 'TICKET_LIST_FAILED', 'Tickets could not be loaded.')
   }
 })
 

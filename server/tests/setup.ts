@@ -22,6 +22,8 @@ vi.mock('../src/prisma', () => ({
     ticket: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
   },
 }))
