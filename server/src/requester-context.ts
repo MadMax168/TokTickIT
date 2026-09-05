@@ -42,10 +42,11 @@ export default async function requesterContext(
     response.locals.developmentRequesterId = requester.id
     next()
   } catch {
+    const failure = response.locals.requesterContextFailure as { code?: string; message?: string } | undefined
     response.status(500).json({
       error: {
-        code: 'TICKET_CREATE_FAILED',
-        message: 'Ticket could not be created.',
+        code: failure?.code ?? 'TICKET_CREATE_FAILED',
+        message: failure?.message ?? 'Ticket could not be created.',
       },
     })
   }
