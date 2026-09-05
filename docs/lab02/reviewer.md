@@ -102,9 +102,9 @@ Fixed. My Tickets now provides an enabled, accessible Open Ticket action for eac
 
 ### Issue 9
 **Comment from peer:**
--
+Request changes: The committed E2E flow cannot reach Ticket Detail. Both tests try to click Open Ticket ${ticketNumber}, but My Tickets still renders a disabled generic Open Ticket button and the shell does not render RequesterTicketDetail. E2E-01 and E2E-02 therefore stop before their detail and attachment checks. Please commit the navigation fix or update the tests and evidence before closing Issue #17.
 
 **My Response:**
--
+Thanks for checking. I verified the current Issue #17 head already includes the Issue #16 navigation fix. My Tickets uses an enabled, ticket-specific Open Ticket action, and the requester shell renders RequesterTicketDetail for the selected ticket. I reran the committed desktop E2E suite successfully: both E2E-01 and E2E-02 reached Ticket Detail and completed their attachment checks. Could you please recheck it again
 
 ---
