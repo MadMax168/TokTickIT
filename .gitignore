@@ -10,6 +10,8 @@ build/
 # prisma
 server/prisma/*.db
 server/generated/
+# Local binary attachment storage
+server/storage/
 # logs & OS
 *.log
 .DS_Store

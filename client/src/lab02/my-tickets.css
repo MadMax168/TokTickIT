@@ -1,0 +1,7 @@
+.my-tickets header { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; justify-content: space-between; }
+.my-tickets-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin: 1.5rem 0; }
+.my-tickets-controls label { font-weight: 700; }
+.my-tickets input, .my-tickets select, .my-tickets button { min-height: 2.5rem; }
+.my-tickets table { width: 100%; border-collapse: collapse; }
+.my-tickets th, .my-tickets td { padding: .65rem; text-align: left; border-bottom: 1px solid #cfd8d2; }
+@media (max-width: 767px) { .my-tickets-controls { grid-template-columns: 1fr; } .my-tickets table { display: block; overflow-x: auto; } }

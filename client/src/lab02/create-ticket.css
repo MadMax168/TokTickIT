@@ -1,0 +1,17 @@
+.create-ticket { display: grid; gap: 1rem; }
+.create-ticket form, .create-ticket fieldset { display: grid; gap: .5rem; }
+.create-ticket fieldset { border: 1px solid #cfd8d2; border-radius: .5rem; padding: 1rem; }
+.create-ticket label { font-weight: 700; }
+.create-ticket label span { color: #8b1e1e; }
+.create-ticket input, .create-ticket select, .create-ticket textarea { box-sizing: border-box; width: 100%; min-height: 2.75rem; border: 1px solid #829187; border-radius: .4rem; padding: .5rem; font: inherit; }
+.create-ticket textarea { min-height: 9rem; resize: vertical; }
+.create-ticket input[readonly] { background: #eaf6ef; }
+.create-ticket input:focus-visible, .create-ticket select:focus-visible, .create-ticket textarea:focus-visible, .create-ticket button:focus-visible { outline: 3px solid #0b7a46; outline-offset: 2px; }
+.create-ticket-generated { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.create-ticket-generated label { display: grid; gap: .5rem; }
+.create-ticket-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.create-ticket button { min-height: 2.75rem; border: 1px solid #006b3c; border-radius: .4rem; padding: .5rem .9rem; color: #006b3c; background: #fff; font-weight: 700; }
+.create-ticket-actions button[type='submit'] { color: #fff; background: #006b3c; }
+.create-ticket-form-error, .field-error { color: #8b1e1e; }
+.create-ticket-success { padding: 1rem; border-radius: .5rem; background: #eaf6ef; color: #173b2a; }
+@media (max-width: 767px) { .create-ticket-generated { grid-template-columns: 1fr; } .create-ticket-actions button { flex: 1 1 100%; } }

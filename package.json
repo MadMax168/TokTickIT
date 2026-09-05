@@ -1,0 +1,15 @@
+{
+  "name": "toktickit-lab02",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:client": "bun --cwd client run test",
+    "test:server": "bun --cwd server run test",
+    "test": "bun run test:client && bun run test:server",
+    "typecheck": "bun --cwd client run build && bun --cwd server run build",
+    "verify": "bun run test && bun run typecheck && bunx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

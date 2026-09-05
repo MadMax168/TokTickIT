@@ -1,0 +1,14 @@
+services:
+  postgres-e2e:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: toktickit_e2e
+      POSTGRES_USER: toktickit
+      POSTGRES_PASSWORD: toktickit
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toktickit -d toktickit_e2e"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
