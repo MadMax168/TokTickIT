@@ -23,6 +23,8 @@ vi.mock('../src/prisma', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
     attachment: {
       create: vi.fn(),
