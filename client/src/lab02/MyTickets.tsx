@@ -8,7 +8,7 @@ type Result = { items: Ticket[]; page: number; pageSize: number; totalItems: num
 type Controls = { search: string; categoryId: string; relatedSystemId: string; requestedPriority: string; currentStatus: string; sortBy: string; sortDirection: string; page: number }
 const defaults: Controls = { search: '', categoryId: '', relatedSystemId: '', requestedPriority: '', currentStatus: '', sortBy: 'ticketDate', sortDirection: 'desc', page: 1 }
 
-export default function MyTickets({ onCreateTicket }: { onCreateTicket: () => void }) {
+export default function MyTickets({ onCreateTicket, onOpenTicket }: { onCreateTicket: () => void; onOpenTicket: (ticketId: number) => void }) {
   const { requester } = useRequesterContext()
   const [controls, setControls] = useState<Controls>(defaults)
   const [result, setResult] = useState<Result | null>(null)
@@ -52,7 +52,7 @@ export default function MyTickets({ onCreateTicket }: { onCreateTicket: () => vo
     {state === 'loading' && <p role="status">Loading Tickets…</p>}
     {state === 'error' && <div role="alert">Tickets could not be loaded. <button type="button" onClick={() => void load()}>Retry</button></div>}
     {state === 'ready' && result?.items.length === 0 && (activeQuery ? <div><p>No matches for this search or filter.</p></div> : <div><p>No tickets yet.</p><button type="button" onClick={onCreateTicket}>Create Ticket</button></div>)}
-    {state === 'ready' && result && result.items.length > 0 && <><table><thead><tr><th>Ticket Number</th><th>Ticket Date</th><th>Summary</th><th>Category</th><th>Requested Priority</th><th>Current Status</th><th>Last Updated</th><th>Action</th></tr></thead><tbody>{result.items.map((item) => <tr key={item.id}><td>{item.ticketNumber}</td><td>{item.ticketDate}</td><td>{item.summary}</td><td>{item.category.name}</td><td>{item.requestedPriority}</td><td>{item.currentStatus}</td><td>{item.lastUpdated}</td><td><button type="button" disabled>Open Ticket</button></td></tr>)}</tbody></table></>}
+    {state === 'ready' && result && result.items.length > 0 && <><table><thead><tr><th>Ticket Number</th><th>Ticket Date</th><th>Summary</th><th>Category</th><th>Requested Priority</th><th>Current Status</th><th>Last Updated</th><th>Action</th></tr></thead><tbody>{result.items.map((item) => <tr key={item.id}><td>{item.ticketNumber}</td><td>{item.ticketDate}</td><td>{item.summary}</td><td>{item.category.name}</td><td>{item.requestedPriority}</td><td>{item.currentStatus}</td><td>{item.lastUpdated}</td><td><button type="button" onClick={() => onOpenTicket(item.id)} aria-label={`Open Ticket ${item.ticketNumber}`}>Open Ticket</button></td></tr>)}</tbody></table></>}
     {state === 'ready' && result && <nav aria-label="Ticket pagination"><p>Page {result.page} of {result.totalPages} · {result.totalItems} tickets</p><button type="button" disabled={result.page <= 1} onClick={() => { const next = { ...controls, page: controls.page - 1 }; setControls(next); void load(next) }}>Previous page</button><button type="button" disabled={result.totalPages === 0 || result.page >= result.totalPages} onClick={() => { const next = { ...controls, page: controls.page + 1 }; setControls(next); void load(next) }}>Next page</button></nav>}
   </section>
 }

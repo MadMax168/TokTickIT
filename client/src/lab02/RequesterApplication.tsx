@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import CreateTicket from './CreateTicket'
 import MyTickets from './MyTickets'
+import RequesterTicketDetail from './RequesterTicketDetail'
 import RequesterSelection from './RequesterSelection'
 import { RequesterProvider, useRequesterContext } from './requester-context'
 import './requester-application.css'
 
 function RequesterApplicationContent() {
   const { requester, clearRequester } = useRequesterContext()
-  const [page, setPage] = useState<'home' | 'create' | 'tickets'>('tickets')
+  const [page, setPage] = useState<'home' | 'create' | 'tickets' | 'detail'>('tickets')
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null)
 
   if (!requester) {
     return <RequesterSelection />
@@ -19,15 +21,15 @@ function RequesterApplicationContent() {
         <strong>TokTickIT</strong>
         <div className="requester-application-context">
           <span>Development Requester: {requester.name}</span>
-          <button type="button" onClick={() => { setPage('home'); clearRequester() }}>Change Requester</button>
+          <button type="button" onClick={() => { setSelectedTicketId(null); setPage('home'); clearRequester() }}>Change Requester</button>
         </div>
       </header>
       <nav className="requester-application-nav" aria-label="Requester navigation">
-        <button type="button" aria-current={page === 'tickets' ? 'page' : undefined} onClick={() => setPage('tickets')}>My Tickets</button>
+        <button type="button" aria-current={page === 'tickets' ? 'page' : undefined} onClick={() => { setSelectedTicketId(null); setPage('tickets') }}>My Tickets</button>
         <button type="button" aria-current={page === 'create' ? 'page' : undefined} onClick={() => setPage('create')}>Create Ticket</button>
       </nav>
       <main className="requester-application-content">
-        {page === 'create' ? <CreateTicket onBack={() => setPage('tickets')} /> : page === 'tickets' ? <MyTickets onCreateTicket={() => setPage('create')} /> : (
+        {page === 'create' ? <CreateTicket onBack={() => setPage('tickets')} /> : page === 'detail' && selectedTicketId ? <RequesterTicketDetail ticketId={selectedTicketId} onBack={() => { setSelectedTicketId(null); setPage('tickets') }} /> : page === 'tickets' ? <MyTickets onCreateTicket={() => setPage('create')} onOpenTicket={(ticketId) => { setSelectedTicketId(ticketId); setPage('detail') }} /> : (
           <section aria-labelledby="requester-context-title">
             <h1 id="requester-context-title">Requester context selected</h1>
             <p>This temporary context is ready for the Lab 2 requester screens.</p>

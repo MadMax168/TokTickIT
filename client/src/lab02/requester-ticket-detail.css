@@ -1,0 +1,6 @@
+.requester-ticket-detail fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.requester-ticket-detail label { display: grid; gap: .35rem; font-weight: 700; }
+.requester-ticket-detail input, .requester-ticket-detail textarea { min-height: 2.5rem; padding: .5rem; color: #173b2a; background: #f5f7f6; border: 1px solid #cfd8d2; }
+.requester-ticket-detail textarea { min-height: 8rem; resize: vertical; }
+.requester-ticket-detail-attachments { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #cfd8d2; }
+@media (max-width: 767px) { .requester-ticket-detail fieldset { grid-template-columns: 1fr; } }
