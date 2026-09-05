@@ -279,6 +279,35 @@ async function ownedTicket(ticketId: string | string[] | undefined, requesterId:
   return prisma.ticket.findFirst({ where: { id, requesterId }, select: { id: true } })
 }
 
+app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED', 'Ticket could not be loaded.'), requesterContext, async (request, response) => {
+  const ticketId = positiveId(request.params.ticketId)
+  if (!ticketId) {
+    ticketError(response, 400, 'TICKET_ID_INVALID', 'Ticket ID is invalid.')
+    return
+  }
+  try {
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: ticketId, requesterId: response.locals.developmentRequesterId as number },
+      select: {
+        id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, description: true, currentStatus: true, createdAt: true, updatedAt: true,
+        requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } },
+        attachments: { select: { id: true, ticketId: true, storageKey: true, displayName: true, mimeType: true, sizeBytes: true, uploadedAt: true, removedAt: true, removalReason: true } },
+      },
+    })
+    if (!ticket) {
+      ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.')
+      return
+    }
+    response.status(200).json({
+      id: ticket.id, ticketNumber: ticket.ticketNumber, ticketDate: ticket.ticketDate.toISOString(), requester: ticket.requester, category: ticket.category, relatedSystem: ticket.relatedSystem,
+      requestedPriority: ticket.requestedPriority, summary: ticket.summary, description: ticket.description, currentStatus: ticket.currentStatus,
+      createdAt: ticket.createdAt.toISOString(), lastUpdated: ticket.updatedAt.toISOString(), attachments: ticket.attachments.map(attachmentMetadata),
+    })
+  } catch {
+    ticketError(response, 500, 'TICKET_DETAIL_FAILED', 'Ticket could not be loaded.')
+  }
+})
+
 const multipartUpload = multer({ storage: multer.memoryStorage() })
 function parseAttachmentUpload(request: express.Request, response: express.Response, next: express.NextFunction) {
   multipartUpload.any()(request, response, (error) => {
