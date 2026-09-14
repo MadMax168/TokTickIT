@@ -5,15 +5,16 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test'
 const requesterA = 'Niran Somchai'
 const requesterB = 'Aree Chai'
 
-async function capture(page: Page, testInfo: TestInfo, screen: 'create-ticket' | 'my-tickets' | 'ticket-detail', state: string) {
+async function capture(page: Page, testInfo: TestInfo, screen: 'requester-selection' | 'create-ticket' | 'my-tickets' | 'ticket-detail', state: string) {
   const path = join('artifacts', 'lab02', 'screenshots', screen, `${testInfo.project.name}-${state}.png`)
   await mkdir(dirname(path), { recursive: true })
   await page.screenshot({ path, fullPage: true })
 }
 
-async function selectRequester(page: Page, name: string) {
+async function selectRequester(page: Page, name: string, testInfo?: TestInfo) {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Choose a Development Requester' })).toBeVisible()
+  if (testInfo) await capture(page, testInfo, 'requester-selection', 'initial')
   await page.getByLabel('Development Requester', { exact: true }).selectOption({ label: name })
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByText(`Development Requester: ${name}`)).toBeVisible()
@@ -39,7 +40,7 @@ async function createTicket(page: Page, testInfo: TestInfo, summary: string, att
 }
 
 test('E2E-01: a requester can create, find, open, and isolate an owned ticket', async ({ page }, testInfo) => {
-  await selectRequester(page, requesterA)
+  await selectRequester(page, requesterA, testInfo)
   const ticketNumber = await createTicket(page, testInfo, 'E2E requester ownership ticket')
 
   await page.getByRole('button', { name: 'My Tickets' }).click()
@@ -71,7 +72,7 @@ test('E2E-01: a requester can create, find, open, and isolate an owned ticket', 
 })
 
 test('E2E-02: a requester can upload, download, and soft-remove an attachment', async ({ page }, testInfo) => {
-  await selectRequester(page, requesterA)
+  await selectRequester(page, requesterA, testInfo)
   await page.getByRole('navigation', { name: 'Requester navigation' }).getByRole('button', { name: 'Create Ticket' }).click()
   await expect(page.getByRole('heading', { name: 'Create Ticket' })).toBeVisible()
   await page.getByLabel('Attachments').setInputFiles({ name: 'not-permitted.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') })
