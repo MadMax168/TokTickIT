@@ -1,3 +1,4 @@
+import { createAuthRouter } from './auth/router'
 import cors from 'cors'
 import express from 'express'
 import multer from 'multer'
@@ -15,8 +16,13 @@ import { createTicketNumberGenerator } from './ticket-number'
 import { validateCreateTicketInput } from './ticket-validation'
 
 const app = express()
-app.use(cors())
+app.use((req, res, next) => req.path.startsWith('/api/auth') ? next() : cors()(req, res, next))
 app.use(express.json())
+app.use((error: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.path.startsWith('/api/auth')) { res.status(400).json({ error: { code: 'INPUT_INVALID', message: 'Invalid JSON request.' } }); return }
+  next(error)
+})
+app.use('/api/auth', createAuthRouter(prisma, { origin: process.env.APP_ORIGIN ?? 'http://localhost:5173' }))
 
 function referenceDataFailure(response: express.Response, error: unknown, resourceName: string) {
   const code = error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -32,6 +38,7 @@ function referenceDataFailure(response: express.Response, error: unknown, resour
   })
 }
 
+// TODO(Issue 3): retire this selector API with generic 404 after authenticated Requester integration.
 app.get('/api/development-requesters', async (_request, response) => {
   try {
     const requesters = await prisma.developmentRequester.findMany({
@@ -120,6 +127,7 @@ const ticketDetailInclude = {
   attachments: true,
 } as const
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.post('/api/tickets', requesterContext, async (request, response) => {
   const input = validateCreateTicketInput(request.body)
   if (!input.ok) {
@@ -189,6 +197,7 @@ app.post('/api/tickets', requesterContext, async (request, response) => {
         categoryId: input.value.categoryId,
         relatedSystemId: input.value.relatedSystemId,
         requestedPriority: input.value.requestedPriority,
+        itPriority: input.value.requestedPriority,
         summary: input.value.summary,
         description: input.value.description,
         currentStatus: 'NEW',
@@ -219,6 +228,7 @@ function listContextFailure(_request: express.Request, response: express.Respons
   response.locals.requesterContextFailure = { code: 'TICKET_LIST_FAILED', message: 'Tickets could not be loaded.' }; next()
 }
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.get('/api/tickets', listContextFailure, requesterContext, async (request, response) => {
   const query = parseTicketListQuery(request.query)
   if (!query) { ticketError(response, 400, 'TICKET_QUERY_INVALID', 'Ticket query is invalid.'); return }
@@ -279,6 +289,7 @@ async function ownedTicket(ticketId: string | string[] | undefined, requesterId:
   return prisma.ticket.findFirst({ where: { id, requesterId }, select: { id: true } })
 }
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED', 'Ticket could not be loaded.'), requesterContext, async (request, response) => {
   const ticketId = positiveId(request.params.ticketId)
   if (!ticketId) {
@@ -319,6 +330,7 @@ function parseAttachmentUpload(request: express.Request, response: express.Respo
   })
 }
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_UPLOAD_FAILED', 'Attachment could not be uploaded.'), requesterContext, parseAttachmentUpload, async (request, response) => {
   const requesterId = response.locals.developmentRequesterId as number
   try {
@@ -377,6 +389,7 @@ app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHM
   }
 })
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_METADATA_FAILED', 'Attachment metadata could not be loaded.'), requesterContext, async (request, response) => {
   const requesterId = response.locals.developmentRequesterId as number
   try {
@@ -396,6 +409,7 @@ app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHME
   }
 })
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentContextFailure('ATTACHMENT_DOWNLOAD_FAILED', 'Attachment could not be downloaded.'), requesterContext, async (request, response) => {
   const requesterId = response.locals.developmentRequesterId as number
   try {
@@ -429,6 +443,7 @@ app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentC
   }
 })
 
+// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
 app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContextFailure('ATTACHMENT_REMOVE_FAILED', 'Attachment could not be removed.'), requesterContext, async (request, response) => {
   const requesterId = response.locals.developmentRequesterId as number
   const removalReason = validateRemovalReason(request.body?.removalReason)

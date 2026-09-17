@@ -1,0 +1,53 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import AuthApplication from './AuthApplication';
+it('UI-01 presents login and generic inactive/wrong credential feedback', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) }).mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: { code: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect.' } }) }));
+    render(<AuthApplication />);
+    await screen.findByRole('button', { name: 'Sign in' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.test' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    await screen.findByText('Email or password is incorrect.');
+    expect(screen.getByLabelText('Password')).toHaveValue('');
+    expect(screen.queryByText('Development Requester')).not.toBeInTheDocument();
+});
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState({}, '', '/login'); });
+it('UI-01 announces loading and saving, prevents duplicates and lands by role', async () => {
+    let resolveLogin!: (value: unknown) => void;
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }).mockImplementationOnce(() => new Promise(r => { resolveLogin = r; }));
+    vi.stubGlobal('fetch', fetch);
+    render(<AuthApplication />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading session');
+    await screen.findByRole('button', { name: 'Sign in' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.test' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'long initial password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(screen.getByRole('button', { name: 'Signing in…' })).toBeDisabled();
+    resolveLogin({ ok: true, json: async () => ({ user: { name: 'Staff', role: 'IT_STAFF', mustChangePassword: false }, csrfToken: 'new' }) });
+    await screen.findByRole('link', { name: 'Ticket Queue' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+});
+it('UI-01 displays rate-limit delay and disables submit', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }).mockResolvedValue({ ok: false, status: 429, headers: new Headers({ 'Retry-After': '30' }), json: async () => ({ error: { message: 'Please try again later.' } }) }));
+    render(<AuthApplication />);
+    await screen.findByRole('button', { name: 'Sign in' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.test' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'test password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    await screen.findByText('Try again in 30 seconds.');
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled();
+});
+it('UI-01 keeps email and shows safe retry feedback on network failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }).mockRejectedValue(new Error('private network detail')));
+    render(<AuthApplication />);
+    await screen.findByRole('button', { name: 'Sign in' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.test' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'test password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    await screen.findByText('Request could not be completed. Please retry.');
+    expect(screen.getByLabelText('Email')).toHaveValue('a@example.test');
+    expect(screen.queryByText('private network detail')).not.toBeInTheDocument();
+});
