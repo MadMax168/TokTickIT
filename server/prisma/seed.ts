@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { seedLab03 } from './seed-lab03'
 import 'dotenv/config'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client'
@@ -5,7 +7,7 @@ import { PrismaClient } from '../generated/prisma/client'
 export type SeedClient = Pick<
   PrismaClient,
   'category' | 'relatedSystem' | 'developmentRequester'
->
+> & Partial<Pick<PrismaClient, 'user'>>
 
 const categories = [
   'Account and Access',
@@ -36,7 +38,7 @@ export async function seedDatabase(prisma: SeedClient) {
   for (const name of categories) {
     await prisma.category.upsert({
       where: { name },
-      update: { active: true },
+      update: {},
       create: { name, active: true },
     })
   }
@@ -44,16 +46,21 @@ export async function seedDatabase(prisma: SeedClient) {
   for (const name of relatedSystems) {
     await prisma.relatedSystem.upsert({
       where: { name },
-      update: { active: true },
+      update: {},
       create: { name, active: true },
     })
   }
 
   for (const requester of developmentRequesters) {
-    await prisma.developmentRequester.upsert({
+    const legacy = await prisma.developmentRequester.upsert({
       where: { email: requester.email },
-      update: { name: requester.name, active: requester.active },
+      update: {},
       create: requester,
+    })
+    // Legacy-only E2E fixtures still need the migrated User FK; no usable credential is created.
+    if (prisma.user) await prisma.user.upsert({
+      where: { id: legacy.id }, update: {},
+      create: { id: legacy.id, name: legacy.name, email: legacy.email.trim().toLowerCase(), active: legacy.active, role: 'REQUESTER', passwordHash: '!UNPROVISIONED' },
     })
   }
 }
@@ -63,7 +70,14 @@ async function main() {
   const prisma = new PrismaClient({ adapter })
 
   try {
-    await seedDatabase(prisma)
+    if (process.env.LAB02_SEED !== 'true') {
+      const file = process.env.LAB03_CREDENTIALS_FILE
+      if (!file) throw new Error('LAB03_CREDENTIALS_FILE is required for local-only Lab 3 seed')
+      const passwords = JSON.parse(readFileSync(file, 'utf8')) as Record<string, string>
+      await seedLab03(prisma, email => passwords[email])
+    } else {
+      await seedDatabase(prisma)
+    }
     console.log('Seed complete')
   } finally {
     await prisma.$disconnect()
@@ -71,8 +85,8 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((error) => {
-    console.error(error)
+  main().catch(() => {
+    console.error('Seed failed; check the credential file and database configuration.')
     process.exitCode = 1
   })
 }

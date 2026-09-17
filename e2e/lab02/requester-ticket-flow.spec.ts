@@ -12,7 +12,8 @@ async function capture(page: Page, testInfo: TestInfo, screen: 'requester-select
 }
 
 async function selectRequester(page: Page, name: string, testInfo?: TestInfo) {
-  await page.goto('/')
+  // Issue 2 retains the selector here; Issue 3 switches this suite to real login.
+  await page.goto('/legacy-requester')
   await expect(page.getByRole('heading', { name: 'Choose a Development Requester' })).toBeVisible()
   if (testInfo) await capture(page, testInfo, 'requester-selection', 'initial')
   await page.getByLabel('Development Requester', { exact: true }).selectOption({ label: name })
