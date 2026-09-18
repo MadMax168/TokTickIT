@@ -27,6 +27,12 @@ export function sessionToken(req: Request) {
     const cookies = (req.headers.cookie ?? '').split(';').map(v => v.trim()).filter(v => v.startsWith('toktickit_session='));
     return cookies.length === 1 ? cookies[0].slice('toktickit_session='.length) : undefined;
 }
+export function requireCsrf(req: Request, res: Response, origin: string) {
+    if (req.get('Origin') !== origin) { failure(res, 403, 'CSRF_INVALID', 'Request origin is not allowed.'); return false; }
+    const a = Buffer.from(req.get('X-CSRF-Token') ?? ''), b = Buffer.from(req.authSession?.csrfToken ?? '');
+    if (!a.length || a.length !== b.length || !a.equals(b)) { failure(res, 403, 'CSRF_INVALID', 'Request verification failed.'); return false; }
+    return true;
+}
 export function createAuthMiddleware(resolve: (token?: string) => Promise<AuthSession | null>, options: {
     allowRestricted?: boolean;
     roles?: string[];
