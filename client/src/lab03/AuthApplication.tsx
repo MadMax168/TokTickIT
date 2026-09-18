@@ -189,7 +189,7 @@ export default function AuthApplication() {
     </form>
    </section> : auth && !logoutPending && <>
     <nav aria-label="Application navigation">{links[auth.user.role].map(([label, url]) => <a key={url} href={url} aria-current={path === url ? 'page' : undefined} onClick={e => { e.preventDefault(); move(url); }}>{label}</a>)}<a href="/change-password" onClick={e => { e.preventDefault(); previousPath.current = path; move('/change-password'); }}>Change Password</a></nav>
-    {auth.user.role === 'REQUESTER' ? <RequesterWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : (auth.user.role === 'IT_STAFF' || path === '/staff/tickets') ? <StaffWorkspace path={path} onNavigate={move} /> : links[auth.user.role].some(([, url]) => path === url) ? <section><h1>{links[auth.user.role].find(([, url]) => path === url)?.[0]}</h1><p>This page is not available yet.</p></section> : <section><h1>Access unavailable</h1><a href={defaults[auth.user.role]}>Return to your home page</a></section>}
+    {auth.user.role === 'REQUESTER' ? <RequesterWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : (auth.user.role === 'IT_STAFF' || path === '/staff/tickets') ? <StaffWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : links[auth.user.role].some(([, url]) => path === url) ? <section><h1>{links[auth.user.role].find(([, url]) => path === url)?.[0]}</h1><p>This page is not available yet.</p></section> : <section><h1>Access unavailable</h1><a href={defaults[auth.user.role]}>Return to your home page</a></section>}
    </>}
   </>}
  </main>;
