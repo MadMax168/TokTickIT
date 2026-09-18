@@ -3,7 +3,8 @@ import cors from 'cors'
 import express from 'express'
 import multer from 'multer'
 import prisma from './prisma'
-import requesterContext from './requester-context'
+import { createSessionResolver } from './auth/router'
+import { createAuthMiddleware, requireCsrf } from './auth/middleware'
 import { attachmentStorage } from './attachment-storage'
 import {
   generateAttachmentStorageKey,
@@ -23,6 +24,10 @@ app.use((error: unknown, req: express.Request, res: express.Response, next: expr
   next(error)
 })
 app.use('/api/auth', createAuthRouter(prisma, { origin: process.env.APP_ORIGIN ?? 'http://localhost:5173' }))
+const appOrigin = process.env.APP_ORIGIN ?? 'http://localhost:5173'
+const authenticated = createAuthMiddleware(createSessionResolver(prisma))
+const requesterOnly = createAuthMiddleware(createSessionResolver(prisma), { roles: ['REQUESTER'] })
+const supportOrRequester = createAuthMiddleware(createSessionResolver(prisma), { roles: ['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'] })
 
 function referenceDataFailure(response: express.Response, error: unknown, resourceName: string) {
   const code = error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -38,19 +43,8 @@ function referenceDataFailure(response: express.Response, error: unknown, resour
   })
 }
 
-// TODO(Issue 3): retire this selector API with generic 404 after authenticated Requester integration.
 app.get('/api/development-requesters', async (_request, response) => {
-  try {
-    const requesters = await prisma.developmentRequester.findMany({
-      where: { active: true },
-      orderBy: { id: 'asc' },
-      select: { id: true, name: true, email: true },
-    })
-
-    response.status(200).json({ items: requesters })
-  } catch (error) {
-    referenceDataFailure(response, error, 'Development Requester')
-  }
+  response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Resource not found.' } })
 })
 
 app.get('/api/related-systems', async (_request, response) => {
@@ -87,6 +81,10 @@ type TicketDetailRecord = {
   ticketDate: Date
   requesterId: number
   requestedPriority: string
+  itPriority?: string
+  assignedTo?: { id: number; name: string; role: string; active: boolean } | null
+  problemAppearsResolved?: boolean
+  version?: number
   summary: string
   description: string
   currentStatus: string
@@ -107,6 +105,10 @@ function ticketDetail(ticket: TicketDetailRecord) {
     category: ticket.category,
     relatedSystem: ticket.relatedSystem,
     requestedPriority: ticket.requestedPriority,
+    itPriority: ticket.itPriority,
+    assignedTo: ticket.assignedTo ?? null,
+    problemAppearsResolved: ticket.problemAppearsResolved ?? false,
+    version: ticket.version ?? 1,
     summary: ticket.summary,
     description: ticket.description,
     currentStatus: ticket.currentStatus,
@@ -124,11 +126,11 @@ const ticketDetailInclude = {
   requester: { select: { id: true, name: true } },
   category: { select: { id: true, name: true } },
   relatedSystem: { select: { id: true, name: true } },
+  assignedTo: { select: { id: true, name: true, role: true, active: true } },
   attachments: true,
 } as const
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.post('/api/tickets', requesterContext, async (request, response) => {
+app.post('/api/tickets', requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
   const input = validateCreateTicketInput(request.body)
   if (!input.ok) {
     response.status(400).json({
@@ -141,7 +143,7 @@ app.post('/api/tickets', requesterContext, async (request, response) => {
     return
   }
 
-  const requesterId = response.locals.developmentRequesterId as number
+  const requesterId = request.user!.id
 
   try {
     const existingTicket = await prisma.ticket.findUnique({
@@ -228,11 +230,10 @@ function listContextFailure(_request: express.Request, response: express.Respons
   response.locals.requesterContextFailure = { code: 'TICKET_LIST_FAILED', message: 'Tickets could not be loaded.' }; next()
 }
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.get('/api/tickets', listContextFailure, requesterContext, async (request, response) => {
+app.get('/api/tickets', listContextFailure, requesterOnly, async (request, response) => {
   const query = parseTicketListQuery(request.query)
   if (!query) { ticketError(response, 400, 'TICKET_QUERY_INVALID', 'Ticket query is invalid.'); return }
-  const where = { requesterId: response.locals.developmentRequesterId as number, ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }), ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }), ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }), ...(query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }), ...(query.search === '' ? {} : { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' as const } }, { summary: { contains: query.search, mode: 'insensitive' as const } }] }) }
+  const where = { requesterId: request.user!.id, ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }), ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }), ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }), ...(query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }), ...(query.search === '' ? {} : { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' as const } }, { summary: { contains: query.search, mode: 'insensitive' as const } }] }) }
   try {
     const [totalItems, tickets] = await Promise.all([prisma.ticket.count({ where }), prisma.ticket.findMany({ where, orderBy: [{ [query.sortBy]: query.sortDirection }, { id: 'desc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize, select: { id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, currentStatus: true, updatedAt: true, requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } } } })])
     response.status(200).json({ items: tickets.map((ticket) => ({ id: ticket.id, ticketNumber: ticket.ticketNumber, ticketDate: ticket.ticketDate.toISOString(), requester: ticket.requester, category: ticket.category, relatedSystem: ticket.relatedSystem, requestedPriority: ticket.requestedPriority, summary: ticket.summary, currentStatus: ticket.currentStatus, lastUpdated: ticket.updatedAt.toISOString() })), page: query.page, pageSize: query.pageSize, totalItems, totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize) })
@@ -289,8 +290,7 @@ async function ownedTicket(ticketId: string | string[] | undefined, requesterId:
   return prisma.ticket.findFirst({ where: { id, requesterId }, select: { id: true } })
 }
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED', 'Ticket could not be loaded.'), requesterContext, async (request, response) => {
+app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED', 'Ticket could not be loaded.'), supportOrRequester, async (request, response) => {
   const ticketId = positiveId(request.params.ticketId)
   if (!ticketId) {
     ticketError(response, 400, 'TICKET_ID_INVALID', 'Ticket ID is invalid.')
@@ -298,9 +298,9 @@ app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED
   }
   try {
     const ticket = await prisma.ticket.findFirst({
-      where: { id: ticketId, requesterId: response.locals.developmentRequesterId as number },
+      where: { id: ticketId, ...(request.user!.role === 'REQUESTER' ? { requesterId: request.user!.id } : {}) },
       select: {
-        id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, description: true, currentStatus: true, createdAt: true, updatedAt: true,
+        id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, itPriority: true, problemAppearsResolved: true, version: true, summary: true, description: true, currentStatus: true, createdAt: true, updatedAt: true,
         requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } },
         attachments: { select: { id: true, ticketId: true, storageKey: true, displayName: true, mimeType: true, sizeBytes: true, uploadedAt: true, removedAt: true, removalReason: true } },
       },
@@ -311,12 +311,51 @@ app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED
     }
     response.status(200).json({
       id: ticket.id, ticketNumber: ticket.ticketNumber, ticketDate: ticket.ticketDate.toISOString(), requester: ticket.requester, category: ticket.category, relatedSystem: ticket.relatedSystem,
-      requestedPriority: ticket.requestedPriority, summary: ticket.summary, description: ticket.description, currentStatus: ticket.currentStatus,
+      requestedPriority: ticket.requestedPriority, itPriority: ticket.itPriority, problemAppearsResolved: ticket.problemAppearsResolved, version: ticket.version, summary: ticket.summary, description: ticket.description, currentStatus: ticket.currentStatus,
       createdAt: ticket.createdAt.toISOString(), lastUpdated: ticket.updatedAt.toISOString(), attachments: ticket.attachments.map(attachmentMetadata),
     })
   } catch {
     ticketError(response, 500, 'TICKET_DETAIL_FAILED', 'Ticket could not be loaded.')
   }
+})
+
+function commentProjection(comment: { id: number; body: string; createdAt: Date; author: { id: number; name: string; role: string } }) {
+  return { id: comment.id, body: comment.body, createdAt: comment.createdAt.toISOString(), author: comment.author }
+}
+async function accessibleTicket(request: express.Request) {
+  const id = positiveId(request.params.ticketId)
+  if (!id) return null
+  return prisma.ticket.findFirst({ where: { id, ...(request.user!.role === 'REQUESTER' ? { requesterId: request.user!.id } : {}) }, select: { id: true } })
+}
+app.get('/api/tickets/:ticketId/comments', supportOrRequester, async (request, response) => {
+  try {
+    const ticket = await accessibleTicket(request)
+    if (!ticket) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return }
+    const items = await prisma.publicComment.findMany({ where: { ticketId: ticket.id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, body: true, createdAt: true, author: { select: { id: true, name: true, role: true } } } })
+    response.json({ items: items.map(commentProjection) })
+  } catch { ticketError(response, 500, 'COMMENT_LIST_FAILED', 'Comments could not be loaded.') }
+})
+app.post('/api/tickets/:ticketId/comments', supportOrRequester, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const body = typeof request.body?.body === 'string' ? request.body.body.trim() : ''
+  if (!body || [...body].length > 2000) { ticketError(response, 400, 'COMMENT_INVALID', 'Comment must be 1–2000 characters.'); return }
+  try {
+    const ticket = await accessibleTicket(request)
+    if (!ticket) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return }
+    const comment = await prisma.publicComment.create({ data: { ticketId: ticket.id, authorId: request.user!.id, body }, select: { id: true, body: true, createdAt: true, author: { select: { id: true, name: true, role: true } } } })
+    response.status(201).json(commentProjection(comment))
+  } catch { ticketError(response, 500, 'COMMENT_CREATE_FAILED', 'Comment could not be created.') }
+})
+app.patch('/api/tickets/:ticketId/resolution-indicator', requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const ticketId = positiveId(request.params.ticketId)
+  const value = request.body?.problemAppearsResolved
+  const version = request.body?.version
+  if (!ticketId || typeof value !== 'boolean' || !Number.isInteger(version) || version < 1) { ticketError(response, 400, 'INPUT_INVALID', 'Indicator input is invalid.'); return }
+  try {
+    const updated = await prisma.ticket.updateMany({ where: { id: ticketId, requesterId: request.user!.id, version }, data: { problemAppearsResolved: value, version: { increment: value === undefined ? 0 : 1 } } })
+    if (!updated.count) { const exists = await prisma.ticket.findFirst({ where: { id: ticketId, requesterId: request.user!.id }, select: { id: true } }); ticketError(response, exists ? 409 : 404, exists ? 'TICKET_VERSION_CONFLICT' : 'TICKET_NOT_FOUND', exists ? 'Ticket version is stale.' : 'Ticket was not found.'); return }
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId }, include: ticketDetailInclude })
+    response.json(ticketDetail(ticket as unknown as TicketDetailRecord))
+  } catch { ticketError(response, 500, 'INDICATOR_UPDATE_FAILED', 'Resolution indicator could not be updated.') }
 })
 
 const multipartUpload = multer({ storage: multer.memoryStorage() })
@@ -330,9 +369,8 @@ function parseAttachmentUpload(request: express.Request, response: express.Respo
   })
 }
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_UPLOAD_FAILED', 'Attachment could not be uploaded.'), requesterContext, parseAttachmentUpload, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_UPLOAD_FAILED', 'Attachment could not be uploaded.'), requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, parseAttachmentUpload, async (request, response) => {
+  const requesterId = request.user!.id
   try {
     const ticket = await ownedTicket(request.params.ticketId, requesterId)
     if (!ticket) {
@@ -389,11 +427,10 @@ app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHM
   }
 })
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_METADATA_FAILED', 'Attachment metadata could not be loaded.'), requesterContext, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_METADATA_FAILED', 'Attachment metadata could not be loaded.'), supportOrRequester, async (request, response) => {
+  const requesterId = request.user!.id
   try {
-    const ticket = await ownedTicket(request.params.ticketId, requesterId)
+    const ticket = request.user!.role === 'REQUESTER' ? await ownedTicket(request.params.ticketId, requesterId) : await prisma.ticket.findFirst({ where: { id: positiveId(request.params.ticketId) ?? -1 }, select: { id: true } })
     if (!ticket) {
       attachmentError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.')
       return
@@ -409,11 +446,10 @@ app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHME
   }
 })
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentContextFailure('ATTACHMENT_DOWNLOAD_FAILED', 'Attachment could not be downloaded.'), requesterContext, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentContextFailure('ATTACHMENT_DOWNLOAD_FAILED', 'Attachment could not be downloaded.'), supportOrRequester, async (request, response) => {
+  const requesterId = request.user!.id
   try {
-    const ticket = await ownedTicket(request.params.ticketId, requesterId)
+    const ticket = request.user!.role === 'REQUESTER' ? await ownedTicket(request.params.ticketId, requesterId) : await prisma.ticket.findFirst({ where: { id: positiveId(request.params.ticketId) ?? -1 }, select: { id: true } })
     if (!ticket) {
       attachmentError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.')
       return
@@ -443,9 +479,8 @@ app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentC
   }
 })
 
-// TODO(Issue 3): still uses Lab 2 Development Requester identity; wire auth, password gate, roles and CSRF.
-app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContextFailure('ATTACHMENT_REMOVE_FAILED', 'Attachment could not be removed.'), requesterContext, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContextFailure('ATTACHMENT_REMOVE_FAILED', 'Attachment could not be removed.'), requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const requesterId = request.user!.id
   const removalReason = validateRemovalReason(request.body?.removalReason)
   if (!removalReason) {
     attachmentError(response, 400, 'REMOVAL_REASON_INVALID', 'Removal reason must be 3-200 characters.')
