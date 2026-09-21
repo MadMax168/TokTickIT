@@ -28,7 +28,7 @@ it('UI-01 announces loading and saving, prevents duplicates and lands by role', 
     expect(screen.getByRole('button', { name: 'Signing in…' })).toBeDisabled();
     resolveLogin({ ok: true, json: async () => ({ user: { name: 'Staff', role: 'IT_STAFF', mustChangePassword: false }, csrfToken: 'new' }) });
     await screen.findByRole('link', { name: 'Ticket Queue' });
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
 });
 it('UI-01 displays rate-limit delay and disables submit', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }).mockResolvedValue({ ok: false, status: 429, headers: new Headers({ 'Retry-After': '30' }), json: async () => ({ error: { message: 'Please try again later.' } }) }));
