@@ -1,4 +1,4 @@
-# Peer Review — CPE334 Lab 1: TokTickIT
+# Peer Review — CPE334 Lab 3: TokTickIT
 
 ## My Reviewer Details
 
@@ -14,12 +14,11 @@
 
 | Issue | PR Link | Review Outcome |
 |-------|---------|----------------|
-| Issue 1: Sprint Spec | https://github.com/MadMax168/TokTickIT/pull/35 | Approved |
-| Issue 2: Database Prep | https://github.com/MadMax168/TokTickIT/pull/36 | Approved |
-| Issue 3: Req Selection Context | https://github.com/MadMax168/TokTickIT/pull/37 | Approved |
-| Issue 4: Ticket Creation | https://github.com/MadMax168/TokTickIT/pull/38 | Approved |
-| Issue 5: Ticket Screen | https://github.com/MadMax168/TokTickIT/pull/39 | Approved |
-| Issue 6: Attachment Lifecycle | https://github.com/MadMax168/TokTickIT/pull/40 | Approved |
+| Issue 2: Data Model, Migration & Authentication | https://github.com/MadMax168/TokTickIT/pull/36 | Approved |
+| Issue 3: Requester Regression & Public Comments | https://github.com/MadMax168/TokTickIT/pull/37 | Approved |
+| Issue 4: IT Staff Ticket Queue & Operations | https://github.com/MadMax168/TokTickIT/pull/38 | Approved |
+| Issue 5: Administrator User Management | https://github.com/MadMax168/TokTickIT/pull/39 | Approved |
+| Issue 6: Hardening, Testing & Release Integration | https://github.com/MadMax168/TokTickIT/pull/40 | Changes requested; release gate open |
 
 ---
 
@@ -183,8 +182,10 @@ No blocking issues remain under the agreed review scope. This PR is okay to merg
 ### Issue 6
 **Comment from peer:**
 
+I reviewed PR #40 against Issue #33. The audit is transparent, but the release gate is still open: direct authorization, integrated E2E, migration, responsive/accessibility evidence, and planned test rows remain outstanding. `reviewer.md` also needs correction: PRs #38–#40 have incorrect issue labels, PR #40 is marked approved before review, and the Issue 6 section is blank. Please complete and correct the release evidence before merge.
 
 **My Response:**
 
+Corrected the Lab 3 reviewer record so PR #38 maps to Issue #31, PR #39 maps to Issue #32, and PR #40 maps to Issue #33. PR #40 is now recorded as changes requested/release gate open rather than approved. Added the Issue 6 review comment and response context, and documented the remaining release evidence gaps in `docs/lab03/issue06-release-audit.md`: direct authorization coverage, integrated E2E, authenticated migration access, responsive/accessibility evidence, and planned test reconciliation. No merge to `main` is claimed until those gates are completed and reviewed.
 
 ---
