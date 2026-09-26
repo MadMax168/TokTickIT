@@ -1,0 +1,751 @@
+
+=== Server tests (all) ===
+Directory: server
+Command: npx vitest run --reporter=verbose
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /Users/madmax168/Documents/KMUTT/CPE/334-SoftEngineer/TokTickIT/server
+
+ ✓ tests/lab02/ticket-number.unit.test.ts > UNIT-01: Ticket Number generator > creates the documented number format using the server date 5ms
+ ✓ tests/lab02/ticket-number.unit.test.ts > UNIT-01: Ticket Number generator > retries a collision and never returns the colliding number 2ms
+ ✓ tests/lab02/ticket-number.unit.test.ts > UNIT-01: Ticket Number generator > uses only the approved unambiguous uppercase alphabet for generated suffixes 1ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > trims text and accepts inclusive summary and description boundaries 5ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > accepts the maximum inclusive text lengths 1ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects invalid values and server-generated fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > rejects unknown extra request-body fields 0ms
+ ✓ tests/lab02/ticket-validation.unit.test.ts > UNIT-02: Create Ticket validation and normalization > accepts each documented Requested Priority value 1ms
+ ✓ tests/lab03/password-policy.unit.test.ts > validates Unicode code-point boundaries without trimming or composition rules 4ms
+ ✓ tests/lab03/auth-middleware.unit.test.ts > attaches identity, checks roles/restricted sessions and never trusts selector headers 8ms
+ ✓ tests/lab03/auth-middleware.unit.test.ts > validates opaque token syntax/hash and all session expiry states independently 209ms
+ ✓ tests/lab02/seed-data.unit.test.ts > BR-22: Lab 2 seed data > uses unique-key upserts and remains idempotent across repeated runs 12ms
+ ✓ tests/lab-01/api.test.ts > GET /api/health > returns 200 27ms
+ ✓ tests/lab-01/api.test.ts > GET /api/health > returns the TokTickIT API health status 4ms
+ ✓ tests/lab-01/api.test.ts > API-03: Category list > returns 200 3ms
+ ✓ tests/lab-01/api.test.ts > API-03: Category list > returns array of 4 items 3ms
+ ✓ tests/lab-01/api.test.ts > API-03: Category list > first item name is Account and Access 3ms
+ ✓ tests/lab02/ticket-detail.api.test.ts > Owned Ticket Detail API > returns the complete owned detail shape and safe attachment metadata 27ms
+ ✓ tests/lab02/ticket-detail.api.test.ts > Owned Ticket Detail API > rejects an invalid ticket ID before lookup 4ms
+ ✓ tests/lab02/ticket-detail.api.test.ts > Owned Ticket Detail API > uses the same not-found response for missing and cross-requester Tickets 6ms
+ ✓ tests/lab02/ticket-detail.api.test.ts > Owned Ticket Detail API > returns a safe detail failure 4ms
+ ✓ tests/lab02/my-tickets.api.test.ts > My Tickets API > returns only the selected requester tickets with deterministic query options 33ms
+ ✓ tests/lab02/my-tickets.api.test.ts > My Tickets API > rejects invalid query input without reading tickets 5ms
+ ✓ tests/lab02/my-tickets.api.test.ts > My Tickets API > uses the identical empty response shape for no owned tickets and no matches 5ms
+ ✓ tests/lab02/my-tickets.api.test.ts > My Tickets API > returns a safe list failure without leaking database detail 3ms
+ ✓ tests/lab02/my-tickets.api.test.ts > My Tickets API > reports requester-context lookup outages as the documented list failure 3ms
+ ✓ tests/lab02/attachments.api.test.ts > Attachment lifecycle API > uploads a permitted owned file and returns safe metadata 44ms
+ ✓ tests/lab02/attachments.api.test.ts > Attachment lifecycle API > returns active and removed metadata without a removed download URL 5ms
+ ✓ tests/lab02/attachments.api.test.ts > Attachment lifecycle API > downloads only an active owned attachment 4ms
+ ✓ tests/lab02/attachments.api.test.ts > Attachment lifecycle API > soft-removes an owned active attachment with a valid reason 16ms
+ ✓ tests/lab02/attachments.api.test.ts > Attachment lifecycle API > rejects unsupported, oversized, and sixth active uploads without persisting them 7ms
+ ✓ tests/lab02/attachments.api.test.ts > Attachment lifecycle API > blocks removed downloads and invalid or repeated removal safely 6ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Development Requesters > returns only active requesters in ascending ID order and no active field 31ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Development Requesters > returns the documented safe error for reference-data failure 4ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Development Requesters > returns the documented safe error for reference-data failure 4ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Related Systems > returns only active Related Systems in ascending ID order 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Related Systems > returns the documented safe error when Related Systems fail to load 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Related Systems > returns the documented safe error when Related Systems fail to load 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-01: Categories > returns only active Categories in ascending ID order 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > requester-context middleware > rejects missing or malformed requester context 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > requester-context middleware > rejects missing or malformed requester context 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > requester-context middleware > rejects missing or malformed requester context 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > requester-context middleware > rejects an unknown or inactive requester 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > requester-context middleware > allows a request with an active requester 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-02: Create Ticket > creates exactly one Ticket from the requester header with generated server fields 12ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > rejects invalid input without creating a Ticket 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > rejects invalid input without creating a Ticket 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > rejects invalid input without creating a Ticket 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > rejects undefined requester context before reading Ticket data 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > rejects unknown requester context before reading Ticket data 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > returns a safe server failure when requester-context lookup fails 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > returns 404 when the requested category is absent or inactive 3ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > returns 404 when the requested category is absent or inactive 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > returns 404 when the requested related system is absent or inactive 1ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > returns 404 when the requested related system is absent or inactive 1ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-03: Create Ticket validation > returns the documented safe error for an unexpected create failure 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-04: Create Ticket idempotency > returns the existing Ticket for an equivalent normalized retry 2ms
+ ✓ tests/lab02/create-ticket.api.test.ts > API-04: Create Ticket idempotency > returns a conflict when the idempotency key is reused with a changed payload 1ms
+ ✓ tests/lab03/password-hash.unit.test.ts > uses exact Argon2id parameters, random salts and exact password verification 652ms
+stdout | tests/lab03/migration.integration.test.ts > MIG-01a preserves rows, IDs, all legacy fields and ownership; rejects collisions atomically
+MIG-01a: Tickets 1→1; Attachments 1→1; Requesters 2→Users 2; orphan ticket owners 0; all legacy fields unchanged.
+
+ ✓ tests/lab03/migration.integration.test.ts > MIG-01a preserves rows, IDs, all legacy fields and ownership; rejects collisions atomically 625ms
+ ✓ tests/lab03/auth.api.test.ts > API-01 normalized login for every role returns safe identity and cookie 856ms
+ ✓ tests/lab03/auth.api.test.ts > API-02 counts unknown/wrong/inactive failures in durable independent rolling buckets 1224ms
+ ✓ tests/lab03/migration.integration.test.ts > MIG-02a seeds safe complete fixtures without overwriting on rerun 2082ms
+ ✓ tests/lab03/auth.api.test.ts > API-03 inactive account has generic credential failure and old sessions fail 398ms
+ ✓ tests/lab03/auth.api.test.ts > API-05 me and repeat logout revoke server session 289ms
+ ✓ tests/lab03/migration.integration.test.ts > MIG-02a provisions unique initial credentials without resetting existing users 784ms
+ ✓ tests/lab03/migration.integration.test.ts > MIG-02a preflight rejects orphaned historical data without partial schema changes 109ms
+ ✓ tests/lab03/auth.api.test.ts > API-06 expiry and role/activity changes invalidate permanently 611ms
+ ✓ tests/lab03/auth.api.test.ts > AUTH-CHANGE: validates change, rotates token and revokes every old session 1249ms
+ ✓ tests/lab03/auth.api.test.ts > AUTH-CSRF: protects mutations and rejects mass assignment and unsafe errors 259ms
+ ✓ tests/lab03/auth.api.test.ts > AUTH-CSRF secure cookies, invalid CSRF and valid login rotate existing sessions 508ms
+ ✓ tests/lab03/auth.api.test.ts > API-02 concurrent invalid attempts cannot bypass threshold 776ms
+ ✓ tests/lab03/auth.api.test.ts > API-06 deactivation followed by activation never revives a cookie 264ms
+
+ Test Files  13 passed (13)
+      Tests  83 passed (83)
+   Start at  14:32:16
+   Duration  7.61s (transform 1.49s, setup 498ms, import 3.66s, tests 11.53s, environment 3ms)
+
+
+Exit code: 0
+
+=== Client tests (all) ===
+Directory: client
+Command: npx vitest run --reporter=verbose
+
+ RUN  v4.1.10 /Users/madmax168/Documents/KMUTT/CPE/334-SoftEngineer/TokTickIT/client
+
+ ✓ src/lab02/RequesterTicketDetail.test.tsx > UI-08: Requester Ticket Detail > renders owned ticket fields as read-only and loads the reusable attachment section separately 222ms
+ ✓ src/lab02/RequesterTicketDetail.test.tsx > UI-08: Requester Ticket Detail > shows a generic not-found state and navigates back without ownership disclosure 24ms
+ ✓ src/test/App.test.tsx > App > renders the service desk heading 193ms
+ ✓ src/test/App.test.tsx > App > shows a loading state after Check System is clicked 42ms
+ ✓ src/test/App.test.tsx > App > shows an error message when the health check rejects 43ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 shows REQUESTER navigation and logs out 254ms
+ ✓ src/lab02/AttachmentSection.test.tsx > AttachmentSection > loads metadata, identifies removed files, and confirms removal with a reason 259ms
+ ✓ src/lab02/AttachmentSection.test.tsx > AttachmentSection > rejects an invalid file before upload and explains the five-file limit 38ms
+ ✓ src/lab02/AttachmentSection.test.tsx > AttachmentSection > fetches an active download with the requester context before saving it 21ms
+ ✓ src/test/App.test.tsx > UI-04: Category list displays > shows categories after successful response 30ms
+ ✓ src/test/App.test.tsx > UI-05: Categories from API not hardcoded > displays category name returned by mock 19ms
+ ✓ src/lab03/Login.test.tsx > UI-01 presents login and generic inactive/wrong credential feedback 249ms
+ ✓ src/lab03/ChangePassword.test.tsx > UI-02 gates navigation and validates password confirmation before sending 255ms
+ ✓ src/lab02/RequesterSelection.test.tsx > UI-01 and UI-02: Requester Selection > loads active Requesters, keeps Continue disabled until selection, and supports Change Requester 295ms
+ ✓ src/lab02/RequesterSelection.test.tsx > UI-01 and UI-02: Requester Selection > shows empty and retryable API-failure states without browser storage 38ms
+ ✓ src/lab03/Login.test.tsx > UI-01 announces loading and saving, prevents duplicates and lands by role 81ms
+ ✓ src/lab03/Login.test.tsx > UI-01 displays rate-limit delay and disables submit 40ms
+ ✓ src/lab03/Login.test.tsx > UI-01 keeps email and shows safe retry feedback on network failure 28ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 shows IT_STAFF navigation and logs out 51ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 shows ADMINISTRATOR navigation and logs out 40ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 hides protected content during failed logout and allows retry 39ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 rejects disallowed routes 16ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 fails closed for an unknown role 11ms
+ ✓ src/lab03/AuthenticatedShell.test.tsx > UI-03 discards a stale me response after browser navigation detects session loss 23ms
+ ✓ src/lab03/ChangePassword.test.tsx > UI-02 saves a valid distinct password with CSRF, then clears form and restores navigation 86ms
+ ✓ src/lab03/ChangePassword.test.tsx > UI-02 shows server validation and session-loss states without bypass 66ms
+ ✓ src/lab03/ChangePassword.test.tsx > UI-02 rejects invalid new-password boundary and focuses the field 31ms
+ ✓ src/lab02/MyTickets.test.tsx > UI-06 and UI-07: My Tickets > loads tickets and sends search/filter/sort controls to the owned list API 353ms
+ ✓ src/lab03/ChangePassword.test.tsx > UI-02 rejects invalid new-password boundary and focuses the field 28ms
+ ✓ src/lab03/ChangePassword.test.tsx > UI-02 rejects invalid new-password boundary and focuses the field 27ms
+ ✓ src/lab02/CreateTicket.test.tsx > UI-03 through UI-05: Create Ticket > loads active reference data, submits a valid ticket once, and shows generated values 378ms
+ ✓ src/lab02/MyTickets.test.tsx > UI-06 and UI-07: My Tickets > distinguishes empty tickets from no-results using active query controls 74ms
+ ✓ src/lab02/MyTickets.test.tsx > UI-06 and UI-07: My Tickets > shows loading and safe retry state without stale ticket rows after failure 39ms
+ ✓ src/lab02/MyTickets.test.tsx > UI-06 and UI-07: My Tickets > opens an owned Ticket Detail screen and returns to My Tickets 73ms
+ ✓ src/lab02/CreateTicket.test.tsx > UI-03 through UI-05: Create Ticket > shows field-level validation, focuses the first invalid field, and does not call create 70ms
+ ✓ src/lab02/CreateTicket.test.tsx > UI-03 through UI-05: Create Ticket > disables duplicate submit while pending and preserves fields after an API failure 102ms
+ ✓ src/lab02/CreateTicket.test.tsx > UI-03 through UI-05: Create Ticket > keeps the created Ticket visible and identifies a failed attachment upload for retry 82ms
+ ✓ src/lab02/CreateTicket.test.tsx > UI-03 through UI-05: Create Ticket > locks a successful submission and starts a fresh idempotency intent only on request 90ms
+
+ Test Files  9 passed (9)
+      Tests  38 passed (38)
+   Start at  14:32:25
+   Duration  3.06s (transform 1.22s, setup 2.50s, import 1.63s, tests 3.82s, environment 14.33s)
+
+
+Exit code: 0
+
+=== Client and server production builds ===
+Directory: .
+Command: bun run typecheck
+$ bun --cwd client run build && bun --cwd server run build
+Usage: bun run [flags] <file or script>
+
+Flags:
+      --silent                        Don't print the script command
+      --elide-lines=<val>             Number of lines of script output shown when using --filter (default: 10). Set to 0 to show all lines.
+  -F, --filter=<val>                  Run a script in all workspace packages matching the pattern
+  -b, --bun                           Force a script or package to use Bun's runtime instead of Node.js (via symlinking node)
+      --shell=<val>                   Control the shell used for package.json scripts. Supports either 'bun' or 'system'
+      --workspaces                    Run a script in all workspace packages (from the "workspaces" field in package.json)
+      --parallel                      Run multiple scripts concurrently with Foreman-style output
+      --sequential                    Run multiple scripts sequentially with Foreman-style output
+      --no-exit-on-error              Continue running other scripts when one fails (with --parallel/--sequential)
+      --watch                         Automatically restart the process on file change
+      --hot                           Enable auto reload in the Bun runtime, test runner, or bundler
+      --no-clear-screen               Disable clearing the terminal screen on reload when --hot or --watch is enabled
+      --smol                          Use less memory, but run garbage collection more often
+  -r, --preload=<val>                 Import a module before other modules are loaded
+      --require=<val>                 Alias of --preload, for Node.js compatibility
+      --import=<val>                  Alias of --preload, for Node.js compatibility
+      --inspect=<val>                 Activate Bun's debugger
+      --inspect-wait=<val>            Activate Bun's debugger, wait for a connection before executing
+      --inspect-brk=<val>             Activate Bun's debugger, set breakpoint on first line of code and wait
+      --cpu-prof                      Start CPU profiler and write profile to disk on exit
+      --cpu-prof-name=<val>           Specify the name of the CPU profile file
+      --cpu-prof-dir=<val>            Specify the directory where the CPU profile will be saved
+      --cpu-prof-md                   Output CPU profile in markdown format (grep-friendly, designed for LLM analysis)
+      --cpu-prof-interval=<val>       Specify the sampling interval in microseconds for CPU profiling (default: 1000)
+      --heap-prof                     Generate V8 heap snapshot on exit (.heapsnapshot)
+      --heap-prof-name=<val>          Specify the name of the heap profile file
+      --heap-prof-dir=<val>           Specify the directory where the heap profile will be saved
+      --heap-prof-md                  Generate markdown heap profile on exit (for CLI analysis)
+      --if-present                    Exit without an error if the entrypoint does not exist
+      --no-install                    Disable auto install in the Bun runtime
+      --install=<val>                 Configure auto-install behavior. One of "auto" (default, auto-installs when no node_modules), "fallback" (missing packages only), "force" (always).
+  -i                                  Auto-install dependencies during execution. Equivalent to --install=fallback.
+  -e, --eval=<val>                    Evaluate argument as a script
+  -p, --print=<val>                   Evaluate argument as a script and print the result
+      --prefer-offline                Skip staleness checks for packages in the Bun runtime and resolve from disk
+      --prefer-latest                 Use the latest matching versions of packages in the Bun runtime, always checking npm
+      --port=<val>                    Set the default port for Bun.serve
+      --conditions=<val>              Pass custom conditions to resolve
+      --fetch-preconnect=<val>        Preconnect to a URL while code is loading
+      --max-http-header-size=<val>    Set the maximum size of HTTP headers in bytes. Default is 16KiB
+      --dns-result-order=<val>        Set the default order of DNS lookup results. Valid orders: verbatim (default), ipv4first, ipv6first
+      --expose-gc                     Expose gc() on the global object. Has no effect on Bun.gc().
+      --no-deprecation                Suppress all reporting of the custom deprecation.
+      --throw-deprecation             Determine whether or not deprecation warnings result in errors.
+      --title=<val>                   Set the process title
+      --zero-fill-buffers             Boolean to force Buffer.allocUnsafe(size) to be zero-filled.
+      --use-system-ca                 Use the system's trusted certificate authorities
+      --use-openssl-ca                Use OpenSSL's default CA store
+      --use-bundled-ca                Use bundled CA store
+      --redis-preconnect              Preconnect to $REDIS_URL at startup
+      --sql-preconnect                Preconnect to PostgreSQL at startup
+      --no-addons                     Throw an error if process.dlopen is called, and disable export condition "node-addons"
+      --unhandled-rejections=<val>    One of "strict", "throw", "warn", "none", or "warn-with-error-code"
+      --console-depth=<val>           Set the default depth for console.log object inspection (default: 2)
+      --user-agent=<val>              Set the default User-Agent header for HTTP requests
+      --main-fields=<val>             Main fields to lookup in package.json. Defaults to --target dependent
+      --preserve-symlinks             Preserve symlinks when resolving files
+      --preserve-symlinks-main        Preserve symlinks when resolving the main entry point
+      --extension-order=<val>         Defaults to: .tsx,.ts,.jsx,.js,.json
+      --tsconfig-override=<val>       Specify custom tsconfig.json. Default <d>$cwd<r>/tsconfig.json
+  -d, --define=<val>                  Substitute K:V while parsing, e.g. --define process.env.NODE_ENV:"development". Values are parsed as JSON.
+      --drop=<val>                    Remove function calls, e.g. --drop=console removes all console.* calls.
+      --feature=<val>                 Enable a feature flag for dead-code elimination, e.g. --feature=SUPER_SECRET
+  -l, --loader=<val>                  Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi
+      --no-macros                     Disable macros from being executed in the bundler, transpiler and runtime
+      --jsx-factory=<val>             Changes the function called when compiling JSX elements using the classic JSX runtime
+      --jsx-fragment=<val>            Changes the function called when compiling JSX fragments
+      --jsx-import-source=<val>       Declares the module specifier to be used for importing the jsx and jsxs factory functions. Default: "react"
+      --jsx-runtime=<val>             "automatic" (default) or "classic"
+      --jsx-side-effects              Treat JSX elements as having side effects (disable pure annotations)
+      --ignore-dce-annotations        Ignore tree-shaking annotations such as @__PURE__
+      --env-file=<val>                Load environment variables from the specified file(s)
+      --no-env-file                   Disable automatic loading of .env files
+      --cwd=<val>                     Absolute path to resolve files & entry points from. This just changes the process' cwd.
+  -c, --config=<val>                  Specify path to Bun config file. Default <d>$cwd<r>/bunfig.toml
+  -h, --help                          Display this menu and exit
+
+Examples:
+  Run a JavaScript or TypeScript file
+  bun run ./index.js
+  bun run ./index.tsx
+
+  Run a package.json script
+  bun run dev
+  bun run lint
+
+Full documentation is available at https://bun.com/docs/cli/run
+
+package.json scripts (5 found):
+  $ bun run dev
+    vite
+
+  $ bun run build
+    tsc -b && vite build
+
+  $ bun run test
+    vitest run
+
+  $ bun run lint
+    eslint .
+
+  $ bun run preview
+    vite preview
+
+Usage: bun run [flags] <file or script>
+
+Flags:
+      --silent                        Don't print the script command
+      --elide-lines=<val>             Number of lines of script output shown when using --filter (default: 10). Set to 0 to show all lines.
+  -F, --filter=<val>                  Run a script in all workspace packages matching the pattern
+  -b, --bun                           Force a script or package to use Bun's runtime instead of Node.js (via symlinking node)
+      --shell=<val>                   Control the shell used for package.json scripts. Supports either 'bun' or 'system'
+      --workspaces                    Run a script in all workspace packages (from the "workspaces" field in package.json)
+      --parallel                      Run multiple scripts concurrently with Foreman-style output
+      --sequential                    Run multiple scripts sequentially with Foreman-style output
+      --no-exit-on-error              Continue running other scripts when one fails (with --parallel/--sequential)
+      --watch                         Automatically restart the process on file change
+      --hot                           Enable auto reload in the Bun runtime, test runner, or bundler
+      --no-clear-screen               Disable clearing the terminal screen on reload when --hot or --watch is enabled
+      --smol                          Use less memory, but run garbage collection more often
+  -r, --preload=<val>                 Import a module before other modules are loaded
+      --require=<val>                 Alias of --preload, for Node.js compatibility
+      --import=<val>                  Alias of --preload, for Node.js compatibility
+      --inspect=<val>                 Activate Bun's debugger
+      --inspect-wait=<val>            Activate Bun's debugger, wait for a connection before executing
+      --inspect-brk=<val>             Activate Bun's debugger, set breakpoint on first line of code and wait
+      --cpu-prof                      Start CPU profiler and write profile to disk on exit
+      --cpu-prof-name=<val>           Specify the name of the CPU profile file
+      --cpu-prof-dir=<val>            Specify the directory where the CPU profile will be saved
+      --cpu-prof-md                   Output CPU profile in markdown format (grep-friendly, designed for LLM analysis)
+      --cpu-prof-interval=<val>       Specify the sampling interval in microseconds for CPU profiling (default: 1000)
+      --heap-prof                     Generate V8 heap snapshot on exit (.heapsnapshot)
+      --heap-prof-name=<val>          Specify the name of the heap profile file
+      --heap-prof-dir=<val>           Specify the directory where the heap profile will be saved
+      --heap-prof-md                  Generate markdown heap profile on exit (for CLI analysis)
+      --if-present                    Exit without an error if the entrypoint does not exist
+      --no-install                    Disable auto install in the Bun runtime
+      --install=<val>                 Configure auto-install behavior. One of "auto" (default, auto-installs when no node_modules), "fallback" (missing packages only), "force" (always).
+  -i                                  Auto-install dependencies during execution. Equivalent to --install=fallback.
+  -e, --eval=<val>                    Evaluate argument as a script
+  -p, --print=<val>                   Evaluate argument as a script and print the result
+      --prefer-offline                Skip staleness checks for packages in the Bun runtime and resolve from disk
+      --prefer-latest                 Use the latest matching versions of packages in the Bun runtime, always checking npm
+      --port=<val>                    Set the default port for Bun.serve
+      --conditions=<val>              Pass custom conditions to resolve
+      --fetch-preconnect=<val>        Preconnect to a URL while code is loading
+      --max-http-header-size=<val>    Set the maximum size of HTTP headers in bytes. Default is 16KiB
+      --dns-result-order=<val>        Set the default order of DNS lookup results. Valid orders: verbatim (default), ipv4first, ipv6first
+      --expose-gc                     Expose gc() on the global object. Has no effect on Bun.gc().
+      --no-deprecation                Suppress all reporting of the custom deprecation.
+      --throw-deprecation             Determine whether or not deprecation warnings result in errors.
+      --title=<val>                   Set the process title
+      --zero-fill-buffers             Boolean to force Buffer.allocUnsafe(size) to be zero-filled.
+      --use-system-ca                 Use the system's trusted certificate authorities
+      --use-openssl-ca                Use OpenSSL's default CA store
+      --use-bundled-ca                Use bundled CA store
+      --redis-preconnect              Preconnect to $REDIS_URL at startup
+      --sql-preconnect                Preconnect to PostgreSQL at startup
+      --no-addons                     Throw an error if process.dlopen is called, and disable export condition "node-addons"
+      --unhandled-rejections=<val>    One of "strict", "throw", "warn", "none", or "warn-with-error-code"
+      --console-depth=<val>           Set the default depth for console.log object inspection (default: 2)
+      --user-agent=<val>              Set the default User-Agent header for HTTP requests
+      --main-fields=<val>             Main fields to lookup in package.json. Defaults to --target dependent
+      --preserve-symlinks             Preserve symlinks when resolving files
+      --preserve-symlinks-main        Preserve symlinks when resolving the main entry point
+      --extension-order=<val>         Defaults to: .tsx,.ts,.jsx,.js,.json
+      --tsconfig-override=<val>       Specify custom tsconfig.json. Default <d>$cwd<r>/tsconfig.json
+  -d, --define=<val>                  Substitute K:V while parsing, e.g. --define process.env.NODE_ENV:"development". Values are parsed as JSON.
+      --drop=<val>                    Remove function calls, e.g. --drop=console removes all console.* calls.
+      --feature=<val>                 Enable a feature flag for dead-code elimination, e.g. --feature=SUPER_SECRET
+  -l, --loader=<val>                  Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi
+      --no-macros                     Disable macros from being executed in the bundler, transpiler and runtime
+      --jsx-factory=<val>             Changes the function called when compiling JSX elements using the classic JSX runtime
+      --jsx-fragment=<val>            Changes the function called when compiling JSX fragments
+      --jsx-import-source=<val>       Declares the module specifier to be used for importing the jsx and jsxs factory functions. Default: "react"
+      --jsx-runtime=<val>             "automatic" (default) or "classic"
+      --jsx-side-effects              Treat JSX elements as having side effects (disable pure annotations)
+      --ignore-dce-annotations        Ignore tree-shaking annotations such as @__PURE__
+      --env-file=<val>                Load environment variables from the specified file(s)
+      --no-env-file                   Disable automatic loading of .env files
+      --cwd=<val>                     Absolute path to resolve files & entry points from. This just changes the process' cwd.
+  -c, --config=<val>                  Specify path to Bun config file. Default <d>$cwd<r>/bunfig.toml
+  -h, --help                          Display this menu and exit
+
+Examples:
+  Run a JavaScript or TypeScript file
+  bun run ./index.js
+  bun run ./index.tsx
+
+  Run a package.json script
+  bun run dev
+  bun run lint
+
+Full documentation is available at https://bun.com/docs/cli/run
+
+package.json scripts (5 found):
+  $ bun run dev
+    tsx watch src/index.ts
+
+  $ bun run build
+    tsc
+
+  $ bun run test
+    vitest run
+
+  $ bun run db:migrate
+    prisma migrate dev
+
+  $ bun run db:seed
+    tsx prisma/seed.ts
+
+
+Exit code: 0
+
+=== Issue 2 auth browser tests ===
+Directory: .
+Command: npx playwright test -c playwright.lab03.config.ts
+[WebServer] (node:61664) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61665) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61665) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61694) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:61735) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [desktop] › e2e/lab03/authentication.spec.ts:12:1 › E2E-02 initial login, required change, refresh, logout and replay rejection (3.2s)
+(node:61800) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [tablet] › e2e/lab03/authentication.spec.ts:12:1 › E2E-02 initial login, required change, refresh, logout and replay rejection (2.5s)
+(node:61841) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [mobile] › e2e/lab03/authentication.spec.ts:12:1 › E2E-02 initial login, required change, refresh, logout and replay rejection (2.4s)
+
+  3 passed (13.4s)
+
+Exit code: 0
+
+=== Release test port for legacy harness ===
+Directory: .
+Command: docker compose -f docker-compose.e2e.yml stop postgres-e2e
+ Container toktickit-postgres-e2e-1  Stopping
+ Container toktickit-postgres-e2e-1  Stopped
+
+Exit code: 0
+
+=== Retained Lab 2 browser regression ===
+Directory: .
+Command: npx playwright test
+[WebServer] (node:61962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61967) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61967) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61995) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:62169) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61967) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+  ✓  1 [desktop] › e2e/lab02/requester-ticket-flow.spec.ts:43:1 › E2E-01: a requester can create, find, open, and isolate an owned ticket (2.1s)
+  ✓  2 [desktop] › e2e/lab02/requester-ticket-flow.spec.ts:75:1 › E2E-02: a requester can upload, download, and soft-remove an attachment (2.1s)
+(node:62255) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [tablet] › e2e/lab02/requester-ticket-flow.spec.ts:43:1 › E2E-01: a requester can create, find, open, and isolate an owned ticket (1.8s)
+  ✓  4 [tablet] › e2e/lab02/requester-ticket-flow.spec.ts:75:1 › E2E-02: a requester can upload, download, and soft-remove an attachment (2.0s)
+(node:62308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  5 [mobile] › e2e/lab02/requester-ticket-flow.spec.ts:43:1 › E2E-01: a requester can create, find, open, and isolate an owned ticket (1.7s)
+  ✓  6 [mobile] › e2e/lab02/requester-ticket-flow.spec.ts:75:1 › E2E-02: a requester can upload, download, and soft-remove an attachment (1.9s)
+
+  6 passed (26.0s)
+
+Exit code: 0
+
+=== Final server tests ===
+Command: npx vitest run
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /Users/madmax168/Documents/KMUTT/CPE/334-SoftEngineer/TokTickIT/server
+
+
+ Test Files  13 passed (13)
+      Tests  84 passed (84)
+   Start at  20:59:16
+   Duration  8.51s (transform 1.97s, setup 712ms, import 4.32s, tests 13.12s, environment 4ms)
+
+
+Exit code: 0
+
+=== Final client tests ===
+Command: npx vitest run
+
+ RUN  v4.1.10 /Users/madmax168/Documents/KMUTT/CPE/334-SoftEngineer/TokTickIT/client
+
+
+ Test Files  9 passed (9)
+      Tests  38 passed (38)
+   Start at  20:59:26
+   Duration  3.50s (transform 1.42s, setup 2.83s, import 1.91s, tests 4.46s, environment 16.35s)
+
+
+Exit code: 0
+
+=== Final builds ===
+Command: bun run typecheck
+$ bun --cwd client run build && bun --cwd server run build
+Usage: bun run [flags] <file or script>
+
+Flags:
+      --silent                        Don't print the script command
+      --elide-lines=<val>             Number of lines of script output shown when using --filter (default: 10). Set to 0 to show all lines.
+  -F, --filter=<val>                  Run a script in all workspace packages matching the pattern
+  -b, --bun                           Force a script or package to use Bun's runtime instead of Node.js (via symlinking node)
+      --shell=<val>                   Control the shell used for package.json scripts. Supports either 'bun' or 'system'
+      --workspaces                    Run a script in all workspace packages (from the "workspaces" field in package.json)
+      --parallel                      Run multiple scripts concurrently with Foreman-style output
+      --sequential                    Run multiple scripts sequentially with Foreman-style output
+      --no-exit-on-error              Continue running other scripts when one fails (with --parallel/--sequential)
+      --watch                         Automatically restart the process on file change
+      --hot                           Enable auto reload in the Bun runtime, test runner, or bundler
+      --no-clear-screen               Disable clearing the terminal screen on reload when --hot or --watch is enabled
+      --smol                          Use less memory, but run garbage collection more often
+  -r, --preload=<val>                 Import a module before other modules are loaded
+      --require=<val>                 Alias of --preload, for Node.js compatibility
+      --import=<val>                  Alias of --preload, for Node.js compatibility
+      --inspect=<val>                 Activate Bun's debugger
+      --inspect-wait=<val>            Activate Bun's debugger, wait for a connection before executing
+      --inspect-brk=<val>             Activate Bun's debugger, set breakpoint on first line of code and wait
+      --cpu-prof                      Start CPU profiler and write profile to disk on exit
+      --cpu-prof-name=<val>           Specify the name of the CPU profile file
+      --cpu-prof-dir=<val>            Specify the directory where the CPU profile will be saved
+      --cpu-prof-md                   Output CPU profile in markdown format (grep-friendly, designed for LLM analysis)
+      --cpu-prof-interval=<val>       Specify the sampling interval in microseconds for CPU profiling (default: 1000)
+      --heap-prof                     Generate V8 heap snapshot on exit (.heapsnapshot)
+      --heap-prof-name=<val>          Specify the name of the heap profile file
+      --heap-prof-dir=<val>           Specify the directory where the heap profile will be saved
+      --heap-prof-md                  Generate markdown heap profile on exit (for CLI analysis)
+      --if-present                    Exit without an error if the entrypoint does not exist
+      --no-install                    Disable auto install in the Bun runtime
+      --install=<val>                 Configure auto-install behavior. One of "auto" (default, auto-installs when no node_modules), "fallback" (missing packages only), "force" (always).
+  -i                                  Auto-install dependencies during execution. Equivalent to --install=fallback.
+  -e, --eval=<val>                    Evaluate argument as a script
+  -p, --print=<val>                   Evaluate argument as a script and print the result
+      --prefer-offline                Skip staleness checks for packages in the Bun runtime and resolve from disk
+      --prefer-latest                 Use the latest matching versions of packages in the Bun runtime, always checking npm
+      --port=<val>                    Set the default port for Bun.serve
+      --conditions=<val>              Pass custom conditions to resolve
+      --fetch-preconnect=<val>        Preconnect to a URL while code is loading
+      --max-http-header-size=<val>    Set the maximum size of HTTP headers in bytes. Default is 16KiB
+      --dns-result-order=<val>        Set the default order of DNS lookup results. Valid orders: verbatim (default), ipv4first, ipv6first
+      --expose-gc                     Expose gc() on the global object. Has no effect on Bun.gc().
+      --no-deprecation                Suppress all reporting of the custom deprecation.
+      --throw-deprecation             Determine whether or not deprecation warnings result in errors.
+      --title=<val>                   Set the process title
+      --zero-fill-buffers             Boolean to force Buffer.allocUnsafe(size) to be zero-filled.
+      --use-system-ca                 Use the system's trusted certificate authorities
+      --use-openssl-ca                Use OpenSSL's default CA store
+      --use-bundled-ca                Use bundled CA store
+      --redis-preconnect              Preconnect to $REDIS_URL at startup
+      --sql-preconnect                Preconnect to PostgreSQL at startup
+      --no-addons                     Throw an error if process.dlopen is called, and disable export condition "node-addons"
+      --unhandled-rejections=<val>    One of "strict", "throw", "warn", "none", or "warn-with-error-code"
+      --console-depth=<val>           Set the default depth for console.log object inspection (default: 2)
+      --user-agent=<val>              Set the default User-Agent header for HTTP requests
+      --main-fields=<val>             Main fields to lookup in package.json. Defaults to --target dependent
+      --preserve-symlinks             Preserve symlinks when resolving files
+      --preserve-symlinks-main        Preserve symlinks when resolving the main entry point
+      --extension-order=<val>         Defaults to: .tsx,.ts,.jsx,.js,.json
+      --tsconfig-override=<val>       Specify custom tsconfig.json. Default <d>$cwd<r>/tsconfig.json
+  -d, --define=<val>                  Substitute K:V while parsing, e.g. --define process.env.NODE_ENV:"development". Values are parsed as JSON.
+      --drop=<val>                    Remove function calls, e.g. --drop=console removes all console.* calls.
+      --feature=<val>                 Enable a feature flag for dead-code elimination, e.g. --feature=SUPER_SECRET
+  -l, --loader=<val>                  Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi
+      --no-macros                     Disable macros from being executed in the bundler, transpiler and runtime
+      --jsx-factory=<val>             Changes the function called when compiling JSX elements using the classic JSX runtime
+      --jsx-fragment=<val>            Changes the function called when compiling JSX fragments
+      --jsx-import-source=<val>       Declares the module specifier to be used for importing the jsx and jsxs factory functions. Default: "react"
+      --jsx-runtime=<val>             "automatic" (default) or "classic"
+      --jsx-side-effects              Treat JSX elements as having side effects (disable pure annotations)
+      --ignore-dce-annotations        Ignore tree-shaking annotations such as @__PURE__
+      --env-file=<val>                Load environment variables from the specified file(s)
+      --no-env-file                   Disable automatic loading of .env files
+      --cwd=<val>                     Absolute path to resolve files & entry points from. This just changes the process' cwd.
+  -c, --config=<val>                  Specify path to Bun config file. Default <d>$cwd<r>/bunfig.toml
+  -h, --help                          Display this menu and exit
+
+Examples:
+  Run a JavaScript or TypeScript file
+  bun run ./index.js
+  bun run ./index.tsx
+
+  Run a package.json script
+  bun run dev
+  bun run lint
+
+Full documentation is available at https://bun.com/docs/cli/run
+
+package.json scripts (5 found):
+  $ bun run dev
+    vite
+
+  $ bun run build
+    tsc -b && vite build
+
+  $ bun run test
+    vitest run
+
+  $ bun run lint
+    eslint .
+
+  $ bun run preview
+    vite preview
+
+Usage: bun run [flags] <file or script>
+
+Flags:
+      --silent                        Don't print the script command
+      --elide-lines=<val>             Number of lines of script output shown when using --filter (default: 10). Set to 0 to show all lines.
+  -F, --filter=<val>                  Run a script in all workspace packages matching the pattern
+  -b, --bun                           Force a script or package to use Bun's runtime instead of Node.js (via symlinking node)
+      --shell=<val>                   Control the shell used for package.json scripts. Supports either 'bun' or 'system'
+      --workspaces                    Run a script in all workspace packages (from the "workspaces" field in package.json)
+      --parallel                      Run multiple scripts concurrently with Foreman-style output
+      --sequential                    Run multiple scripts sequentially with Foreman-style output
+      --no-exit-on-error              Continue running other scripts when one fails (with --parallel/--sequential)
+      --watch                         Automatically restart the process on file change
+      --hot                           Enable auto reload in the Bun runtime, test runner, or bundler
+      --no-clear-screen               Disable clearing the terminal screen on reload when --hot or --watch is enabled
+      --smol                          Use less memory, but run garbage collection more often
+  -r, --preload=<val>                 Import a module before other modules are loaded
+      --require=<val>                 Alias of --preload, for Node.js compatibility
+      --import=<val>                  Alias of --preload, for Node.js compatibility
+      --inspect=<val>                 Activate Bun's debugger
+      --inspect-wait=<val>            Activate Bun's debugger, wait for a connection before executing
+      --inspect-brk=<val>             Activate Bun's debugger, set breakpoint on first line of code and wait
+      --cpu-prof                      Start CPU profiler and write profile to disk on exit
+      --cpu-prof-name=<val>           Specify the name of the CPU profile file
+      --cpu-prof-dir=<val>            Specify the directory where the CPU profile will be saved
+      --cpu-prof-md                   Output CPU profile in markdown format (grep-friendly, designed for LLM analysis)
+      --cpu-prof-interval=<val>       Specify the sampling interval in microseconds for CPU profiling (default: 1000)
+      --heap-prof                     Generate V8 heap snapshot on exit (.heapsnapshot)
+      --heap-prof-name=<val>          Specify the name of the heap profile file
+      --heap-prof-dir=<val>           Specify the directory where the heap profile will be saved
+      --heap-prof-md                  Generate markdown heap profile on exit (for CLI analysis)
+      --if-present                    Exit without an error if the entrypoint does not exist
+      --no-install                    Disable auto install in the Bun runtime
+      --install=<val>                 Configure auto-install behavior. One of "auto" (default, auto-installs when no node_modules), "fallback" (missing packages only), "force" (always).
+  -i                                  Auto-install dependencies during execution. Equivalent to --install=fallback.
+  -e, --eval=<val>                    Evaluate argument as a script
+  -p, --print=<val>                   Evaluate argument as a script and print the result
+      --prefer-offline                Skip staleness checks for packages in the Bun runtime and resolve from disk
+      --prefer-latest                 Use the latest matching versions of packages in the Bun runtime, always checking npm
+      --port=<val>                    Set the default port for Bun.serve
+      --conditions=<val>              Pass custom conditions to resolve
+      --fetch-preconnect=<val>        Preconnect to a URL while code is loading
+      --max-http-header-size=<val>    Set the maximum size of HTTP headers in bytes. Default is 16KiB
+      --dns-result-order=<val>        Set the default order of DNS lookup results. Valid orders: verbatim (default), ipv4first, ipv6first
+      --expose-gc                     Expose gc() on the global object. Has no effect on Bun.gc().
+      --no-deprecation                Suppress all reporting of the custom deprecation.
+      --throw-deprecation             Determine whether or not deprecation warnings result in errors.
+      --title=<val>                   Set the process title
+      --zero-fill-buffers             Boolean to force Buffer.allocUnsafe(size) to be zero-filled.
+      --use-system-ca                 Use the system's trusted certificate authorities
+      --use-openssl-ca                Use OpenSSL's default CA store
+      --use-bundled-ca                Use bundled CA store
+      --redis-preconnect              Preconnect to $REDIS_URL at startup
+      --sql-preconnect                Preconnect to PostgreSQL at startup
+      --no-addons                     Throw an error if process.dlopen is called, and disable export condition "node-addons"
+      --unhandled-rejections=<val>    One of "strict", "throw", "warn", "none", or "warn-with-error-code"
+      --console-depth=<val>           Set the default depth for console.log object inspection (default: 2)
+      --user-agent=<val>              Set the default User-Agent header for HTTP requests
+      --main-fields=<val>             Main fields to lookup in package.json. Defaults to --target dependent
+      --preserve-symlinks             Preserve symlinks when resolving files
+      --preserve-symlinks-main        Preserve symlinks when resolving the main entry point
+      --extension-order=<val>         Defaults to: .tsx,.ts,.jsx,.js,.json
+      --tsconfig-override=<val>       Specify custom tsconfig.json. Default <d>$cwd<r>/tsconfig.json
+  -d, --define=<val>                  Substitute K:V while parsing, e.g. --define process.env.NODE_ENV:"development". Values are parsed as JSON.
+      --drop=<val>                    Remove function calls, e.g. --drop=console removes all console.* calls.
+      --feature=<val>                 Enable a feature flag for dead-code elimination, e.g. --feature=SUPER_SECRET
+  -l, --loader=<val>                  Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi
+      --no-macros                     Disable macros from being executed in the bundler, transpiler and runtime
+      --jsx-factory=<val>             Changes the function called when compiling JSX elements using the classic JSX runtime
+      --jsx-fragment=<val>            Changes the function called when compiling JSX fragments
+      --jsx-import-source=<val>       Declares the module specifier to be used for importing the jsx and jsxs factory functions. Default: "react"
+      --jsx-runtime=<val>             "automatic" (default) or "classic"
+      --jsx-side-effects              Treat JSX elements as having side effects (disable pure annotations)
+      --ignore-dce-annotations        Ignore tree-shaking annotations such as @__PURE__
+      --env-file=<val>                Load environment variables from the specified file(s)
+      --no-env-file                   Disable automatic loading of .env files
+      --cwd=<val>                     Absolute path to resolve files & entry points from. This just changes the process' cwd.
+  -c, --config=<val>                  Specify path to Bun config file. Default <d>$cwd<r>/bunfig.toml
+  -h, --help                          Display this menu and exit
+
+Examples:
+  Run a JavaScript or TypeScript file
+  bun run ./index.js
+  bun run ./index.tsx
+
+  Run a package.json script
+  bun run dev
+  bun run lint
+
+Full documentation is available at https://bun.com/docs/cli/run
+
+package.json scripts (5 found):
+  $ bun run dev
+    tsx watch src/index.ts
+
+  $ bun run build
+    tsc
+
+  $ bun run test
+    vitest run
+
+  $ bun run db:migrate
+    prisma migrate dev
+
+  $ bun run db:seed
+    tsx prisma/seed.ts
+
+
+Exit code: 0
+
+=== Final auth browser flow/screenshots ===
+Command: npx playwright test -c playwright.lab03.config.ts
+[WebServer] (node:66025) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:66026) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:66026) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:66098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:66101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [desktop] › e2e/lab03/authentication.spec.ts:12:1 › E2E-02 initial login, required change, refresh, logout and replay rejection (3.4s)
+(node:66167) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [tablet] › e2e/lab03/authentication.spec.ts:12:1 › E2E-02 initial login, required change, refresh, logout and replay rejection (2.1s)
+(node:66193) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [mobile] › e2e/lab03/authentication.spec.ts:12:1 › E2E-02 initial login, required change, refresh, logout and replay rejection (2.0s)
+
+  3 passed (14.3s)
+
+Exit code: 0
+
+=== Explicit server production build ===
+Command: npm run build (cwd server)
+
+> build
+> tsc
+
+
+Exit code: 0
+
+=== Explicit client production build ===
+Command: npm run build (cwd client)
+
+> client@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.1 building client environment for production...
+[2Ktransforming...✓ 30 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:  0.29 kB
+dist/assets/index-CMlazA7h.css  236.62 kB │ gzip: 32.26 kB
+dist/assets/index-0xym7zKC.js   221.99 kB │ gzip: 67.71 kB
+
+✓ built in 310ms
+
+Exit code: 0

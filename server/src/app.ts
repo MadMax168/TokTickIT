@@ -1,8 +1,10 @@
+import { createAuthRouter } from './auth/router'
 import cors from 'cors'
 import express from 'express'
 import multer from 'multer'
 import prisma from './prisma'
-import requesterContext from './requester-context'
+import { createSessionResolver } from './auth/router'
+import { createAuthMiddleware, requireCsrf } from './auth/middleware'
 import { attachmentStorage } from './attachment-storage'
 import {
   generateAttachmentStorageKey,
@@ -13,10 +15,20 @@ import {
 } from './attachment-policy'
 import { createTicketNumberGenerator } from './ticket-number'
 import { validateCreateTicketInput } from './ticket-validation'
+import { hashPassword, passwordValidationError } from './auth/password'
 
 const app = express()
-app.use(cors())
+app.use((req, res, next) => req.path.startsWith('/api/auth') ? next() : cors()(req, res, next))
 app.use(express.json())
+app.use((error: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.path.startsWith('/api/auth')) { res.status(400).json({ error: { code: 'INPUT_INVALID', message: 'Invalid JSON request.' } }); return }
+  next(error)
+})
+app.use('/api/auth', createAuthRouter(prisma, { origin: process.env.APP_ORIGIN ?? 'http://localhost:5173' }))
+const appOrigin = process.env.APP_ORIGIN ?? 'http://localhost:5173'
+const authenticated = createAuthMiddleware(createSessionResolver(prisma))
+const requesterOnly = createAuthMiddleware(createSessionResolver(prisma), { roles: ['REQUESTER'] })
+const supportOrRequester = createAuthMiddleware(createSessionResolver(prisma), { roles: ['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'] })
 
 function referenceDataFailure(response: express.Response, error: unknown, resourceName: string) {
   const code = error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -33,17 +45,7 @@ function referenceDataFailure(response: express.Response, error: unknown, resour
 }
 
 app.get('/api/development-requesters', async (_request, response) => {
-  try {
-    const requesters = await prisma.developmentRequester.findMany({
-      where: { active: true },
-      orderBy: { id: 'asc' },
-      select: { id: true, name: true, email: true },
-    })
-
-    response.status(200).json({ items: requesters })
-  } catch (error) {
-    referenceDataFailure(response, error, 'Development Requester')
-  }
+  response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Resource not found.' } })
 })
 
 app.get('/api/related-systems', async (_request, response) => {
@@ -80,6 +82,10 @@ type TicketDetailRecord = {
   ticketDate: Date
   requesterId: number
   requestedPriority: string
+  itPriority?: string
+  assignedTo?: { id: number; name: string; role: string; active: boolean } | null
+  problemAppearsResolved?: boolean
+  version?: number
   summary: string
   description: string
   currentStatus: string
@@ -100,6 +106,10 @@ function ticketDetail(ticket: TicketDetailRecord) {
     category: ticket.category,
     relatedSystem: ticket.relatedSystem,
     requestedPriority: ticket.requestedPriority,
+    itPriority: ticket.itPriority,
+    assignedTo: ticket.assignedTo ?? null,
+    problemAppearsResolved: ticket.problemAppearsResolved ?? false,
+    version: ticket.version ?? 1,
     summary: ticket.summary,
     description: ticket.description,
     currentStatus: ticket.currentStatus,
@@ -117,10 +127,11 @@ const ticketDetailInclude = {
   requester: { select: { id: true, name: true } },
   category: { select: { id: true, name: true } },
   relatedSystem: { select: { id: true, name: true } },
+  assignedTo: { select: { id: true, name: true, role: true, active: true } },
   attachments: true,
 } as const
 
-app.post('/api/tickets', requesterContext, async (request, response) => {
+app.post('/api/tickets', requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
   const input = validateCreateTicketInput(request.body)
   if (!input.ok) {
     response.status(400).json({
@@ -133,7 +144,7 @@ app.post('/api/tickets', requesterContext, async (request, response) => {
     return
   }
 
-  const requesterId = response.locals.developmentRequesterId as number
+  const requesterId = request.user!.id
 
   try {
     const existingTicket = await prisma.ticket.findUnique({
@@ -189,6 +200,7 @@ app.post('/api/tickets', requesterContext, async (request, response) => {
         categoryId: input.value.categoryId,
         relatedSystemId: input.value.relatedSystemId,
         requestedPriority: input.value.requestedPriority,
+        itPriority: input.value.requestedPriority,
         summary: input.value.summary,
         description: input.value.description,
         currentStatus: 'NEW',
@@ -219,10 +231,10 @@ function listContextFailure(_request: express.Request, response: express.Respons
   response.locals.requesterContextFailure = { code: 'TICKET_LIST_FAILED', message: 'Tickets could not be loaded.' }; next()
 }
 
-app.get('/api/tickets', listContextFailure, requesterContext, async (request, response) => {
+app.get('/api/tickets', listContextFailure, requesterOnly, async (request, response) => {
   const query = parseTicketListQuery(request.query)
   if (!query) { ticketError(response, 400, 'TICKET_QUERY_INVALID', 'Ticket query is invalid.'); return }
-  const where = { requesterId: response.locals.developmentRequesterId as number, ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }), ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }), ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }), ...(query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }), ...(query.search === '' ? {} : { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' as const } }, { summary: { contains: query.search, mode: 'insensitive' as const } }] }) }
+  const where = { requesterId: request.user!.id, ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }), ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }), ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }), ...(query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }), ...(query.search === '' ? {} : { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' as const } }, { summary: { contains: query.search, mode: 'insensitive' as const } }] }) }
   try {
     const [totalItems, tickets] = await Promise.all([prisma.ticket.count({ where }), prisma.ticket.findMany({ where, orderBy: [{ [query.sortBy]: query.sortDirection }, { id: 'desc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize, select: { id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, currentStatus: true, updatedAt: true, requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } } } })])
     response.status(200).json({ items: tickets.map((ticket) => ({ id: ticket.id, ticketNumber: ticket.ticketNumber, ticketDate: ticket.ticketDate.toISOString(), requester: ticket.requester, category: ticket.category, relatedSystem: ticket.relatedSystem, requestedPriority: ticket.requestedPriority, summary: ticket.summary, currentStatus: ticket.currentStatus, lastUpdated: ticket.updatedAt.toISOString() })), page: query.page, pageSize: query.pageSize, totalItems, totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize) })
@@ -279,7 +291,7 @@ async function ownedTicket(ticketId: string | string[] | undefined, requesterId:
   return prisma.ticket.findFirst({ where: { id, requesterId }, select: { id: true } })
 }
 
-app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED', 'Ticket could not be loaded.'), requesterContext, async (request, response) => {
+app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED', 'Ticket could not be loaded.'), supportOrRequester, async (request, response) => {
   const ticketId = positiveId(request.params.ticketId)
   if (!ticketId) {
     ticketError(response, 400, 'TICKET_ID_INVALID', 'Ticket ID is invalid.')
@@ -287,9 +299,9 @@ app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED
   }
   try {
     const ticket = await prisma.ticket.findFirst({
-      where: { id: ticketId, requesterId: response.locals.developmentRequesterId as number },
+      where: { id: ticketId, ...(request.user!.role === 'REQUESTER' ? { requesterId: request.user!.id } : {}) },
       select: {
-        id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, description: true, currentStatus: true, createdAt: true, updatedAt: true,
+        id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, itPriority: true, problemAppearsResolved: true, version: true, summary: true, description: true, currentStatus: true, createdAt: true, updatedAt: true,
         requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } },
         attachments: { select: { id: true, ticketId: true, storageKey: true, displayName: true, mimeType: true, sizeBytes: true, uploadedAt: true, removedAt: true, removalReason: true } },
       },
@@ -300,12 +312,51 @@ app.get('/api/tickets/:ticketId', attachmentContextFailure('TICKET_DETAIL_FAILED
     }
     response.status(200).json({
       id: ticket.id, ticketNumber: ticket.ticketNumber, ticketDate: ticket.ticketDate.toISOString(), requester: ticket.requester, category: ticket.category, relatedSystem: ticket.relatedSystem,
-      requestedPriority: ticket.requestedPriority, summary: ticket.summary, description: ticket.description, currentStatus: ticket.currentStatus,
+      requestedPriority: ticket.requestedPriority, itPriority: ticket.itPriority, problemAppearsResolved: ticket.problemAppearsResolved, version: ticket.version, summary: ticket.summary, description: ticket.description, currentStatus: ticket.currentStatus,
       createdAt: ticket.createdAt.toISOString(), lastUpdated: ticket.updatedAt.toISOString(), attachments: ticket.attachments.map(attachmentMetadata),
     })
   } catch {
     ticketError(response, 500, 'TICKET_DETAIL_FAILED', 'Ticket could not be loaded.')
   }
+})
+
+function commentProjection(comment: { id: number; body: string; createdAt: Date; author: { id: number; name: string; role: string } }) {
+  return { id: comment.id, body: comment.body, createdAt: comment.createdAt.toISOString(), author: comment.author }
+}
+async function accessibleTicket(request: express.Request) {
+  const id = positiveId(request.params.ticketId)
+  if (!id) return null
+  return prisma.ticket.findFirst({ where: { id, ...(request.user!.role === 'REQUESTER' ? { requesterId: request.user!.id } : {}) }, select: { id: true } })
+}
+app.get('/api/tickets/:ticketId/comments', supportOrRequester, async (request, response) => {
+  try {
+    const ticket = await accessibleTicket(request)
+    if (!ticket) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return }
+    const items = await prisma.publicComment.findMany({ where: { ticketId: ticket.id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, body: true, createdAt: true, author: { select: { id: true, name: true, role: true } } } })
+    response.json({ items: items.map(commentProjection) })
+  } catch { ticketError(response, 500, 'COMMENT_LIST_FAILED', 'Comments could not be loaded.') }
+})
+app.post('/api/tickets/:ticketId/comments', supportOrRequester, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const body = typeof request.body?.body === 'string' ? request.body.body.trim() : ''
+  if (!body || [...body].length > 2000) { ticketError(response, 400, 'COMMENT_INVALID', 'Comment must be 1–2000 characters.'); return }
+  try {
+    const ticket = await accessibleTicket(request)
+    if (!ticket) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return }
+    const comment = await prisma.publicComment.create({ data: { ticketId: ticket.id, authorId: request.user!.id, body }, select: { id: true, body: true, createdAt: true, author: { select: { id: true, name: true, role: true } } } })
+    response.status(201).json(commentProjection(comment))
+  } catch { ticketError(response, 500, 'COMMENT_CREATE_FAILED', 'Comment could not be created.') }
+})
+app.patch('/api/tickets/:ticketId/resolution-indicator', requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const ticketId = positiveId(request.params.ticketId)
+  const value = request.body?.problemAppearsResolved
+  const version = request.body?.version
+  if (!ticketId || typeof value !== 'boolean' || !Number.isInteger(version) || version < 1) { ticketError(response, 400, 'INPUT_INVALID', 'Indicator input is invalid.'); return }
+  try {
+    const updated = await prisma.ticket.updateMany({ where: { id: ticketId, requesterId: request.user!.id, version }, data: { problemAppearsResolved: value, version: { increment: value === undefined ? 0 : 1 } } })
+    if (!updated.count) { const exists = await prisma.ticket.findFirst({ where: { id: ticketId, requesterId: request.user!.id }, select: { id: true } }); ticketError(response, exists ? 409 : 404, exists ? 'TICKET_VERSION_CONFLICT' : 'TICKET_NOT_FOUND', exists ? 'Ticket version is stale.' : 'Ticket was not found.'); return }
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { id: ticketId }, include: ticketDetailInclude })
+    response.json(ticketDetail(ticket as unknown as TicketDetailRecord))
+  } catch { ticketError(response, 500, 'INDICATOR_UPDATE_FAILED', 'Resolution indicator could not be updated.') }
 })
 
 const multipartUpload = multer({ storage: multer.memoryStorage() })
@@ -319,8 +370,8 @@ function parseAttachmentUpload(request: express.Request, response: express.Respo
   })
 }
 
-app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_UPLOAD_FAILED', 'Attachment could not be uploaded.'), requesterContext, parseAttachmentUpload, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_UPLOAD_FAILED', 'Attachment could not be uploaded.'), requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, parseAttachmentUpload, async (request, response) => {
+  const requesterId = request.user!.id
   try {
     const ticket = await ownedTicket(request.params.ticketId, requesterId)
     if (!ticket) {
@@ -377,10 +428,10 @@ app.post('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHM
   }
 })
 
-app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_METADATA_FAILED', 'Attachment metadata could not be loaded.'), requesterContext, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHMENT_METADATA_FAILED', 'Attachment metadata could not be loaded.'), supportOrRequester, async (request, response) => {
+  const requesterId = request.user!.id
   try {
-    const ticket = await ownedTicket(request.params.ticketId, requesterId)
+    const ticket = request.user!.role === 'REQUESTER' ? await ownedTicket(request.params.ticketId, requesterId) : await prisma.ticket.findFirst({ where: { id: positiveId(request.params.ticketId) ?? -1 }, select: { id: true } })
     if (!ticket) {
       attachmentError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.')
       return
@@ -396,10 +447,10 @@ app.get('/api/tickets/:ticketId/attachments', attachmentContextFailure('ATTACHME
   }
 })
 
-app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentContextFailure('ATTACHMENT_DOWNLOAD_FAILED', 'Attachment could not be downloaded.'), requesterContext, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentContextFailure('ATTACHMENT_DOWNLOAD_FAILED', 'Attachment could not be downloaded.'), supportOrRequester, async (request, response) => {
+  const requesterId = request.user!.id
   try {
-    const ticket = await ownedTicket(request.params.ticketId, requesterId)
+    const ticket = request.user!.role === 'REQUESTER' ? await ownedTicket(request.params.ticketId, requesterId) : await prisma.ticket.findFirst({ where: { id: positiveId(request.params.ticketId) ?? -1 }, select: { id: true } })
     if (!ticket) {
       attachmentError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.')
       return
@@ -429,8 +480,8 @@ app.get('/api/tickets/:ticketId/attachments/:attachmentId/download', attachmentC
   }
 })
 
-app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContextFailure('ATTACHMENT_REMOVE_FAILED', 'Attachment could not be removed.'), requesterContext, async (request, response) => {
-  const requesterId = response.locals.developmentRequesterId as number
+app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContextFailure('ATTACHMENT_REMOVE_FAILED', 'Attachment could not be removed.'), requesterOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const requesterId = request.user!.id
   const removalReason = validateRemovalReason(request.body?.removalReason)
   if (!removalReason) {
     attachmentError(response, 400, 'REMOVAL_REASON_INVALID', 'Removal reason must be 3-200 characters.')
@@ -463,6 +514,43 @@ app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContext
     attachmentError(response, 500, 'ATTACHMENT_REMOVE_FAILED', 'Attachment could not be removed.')
   }
 })
+
+const staffOnly = createAuthMiddleware(createSessionResolver(prisma), { roles: ['IT_STAFF', 'ADMINISTRATOR'] })
+const staffActor = createAuthMiddleware(createSessionResolver(prisma), { roles: ['IT_STAFF'] })
+const workflowTransitions: Record<string, string[]> = { NEW: ['OPEN', 'CANCELLED'], OPEN: ['IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'CANCELLED'], IN_PROGRESS: ['WAITING_FOR_REQUESTER', 'RESOLVED', 'CANCELLED'], WAITING_FOR_REQUESTER: ['IN_PROGRESS', 'RESOLVED', 'CANCELLED'], RESOLVED: ['CLOSED', 'REOPENED'], REOPENED: ['OPEN', 'IN_PROGRESS', 'CANCELLED'], CLOSED: [], CANCELLED: [] }
+const staffTicket = async (id: number) => prisma.ticket.findUnique({ where: { id }, include: ticketDetailInclude })
+const queueQuery = (q: express.Request['query']) => {
+  if (Object.values(q).some(v => Array.isArray(v))) return null
+  const str = (k: string) => typeof q[k] === 'string' ? q[k] as string : undefined
+  const search = (str('search') ?? '').trim(); const page = str('page') === undefined ? 1 : Number(str('page')); const pageSize = str('pageSize') === undefined ? 10 : Number(str('pageSize')); const sortBy = str('sortBy') ?? 'ticketDate'; const sortDirection = str('sortDirection') ?? 'desc'
+  const filters = ['currentStatus', 'itPriority', 'assignedToId'].filter(k => str(k) !== undefined)
+  if (search.length > 120 || !Number.isSafeInteger(page) || page < 1 || ![10, 20, 50].includes(pageSize) || !['ticketDate','updatedAt','ticketNumber','summary'].includes(sortBy) || !['asc','desc'].includes(sortDirection) || filters.length > 1 || (str('currentStatus') !== undefined && !workflowTransitions[str('currentStatus')!]) || (str('itPriority') !== undefined && !['LOW','MEDIUM','HIGH'].includes(str('itPriority')!)) || (str('assignedToId') !== undefined && str('assignedToId') !== 'unassigned' && !/^\d+$/.test(str('assignedToId')!))) return null
+  return { search, page, pageSize, sortBy, sortDirection, filter: filters[0], value: filters[0] ? str(filters[0]) : undefined }
+}
+app.get('/api/staff/tickets', staffOnly, async (request, response) => {
+  const query = queueQuery(request.query); if (!query) { ticketError(response, 400, 'QUERY_INVALID', 'Queue query is invalid.'); return }
+  const where: any = { ...(query.search ? { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' } }, { summary: { contains: query.search, mode: 'insensitive' } }] } : {}) }
+  if (query.filter === 'currentStatus') where.currentStatus = query.value
+  if (query.filter === 'itPriority') where.itPriority = query.value
+  if (query.filter === 'assignedToId') where.assignedToId = query.value === 'unassigned' ? null : Number(query.value)
+  try { const [totalItems, items] = await Promise.all([prisma.ticket.count({ where }), prisma.ticket.findMany({ where, orderBy: [{ [query.sortBy]: query.sortDirection }, { id: 'desc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize, include: { requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } }, assignedTo: { select: { id: true, name: true, role: true, active: true } } } })]); response.json({ items: items.map((t: any) => ({ ...t, ticketDate: t.ticketDate.toISOString(), lastUpdated: t.updatedAt.toISOString(), createdAt: t.createdAt.toISOString(), assignedTo: t.assignedTo })), page: query.page, pageSize: query.pageSize, totalItems, totalPages: totalItems ? Math.ceil(totalItems / query.pageSize) : 0 }) } catch { ticketError(response, 500, 'QUEUE_FAILED', 'Tickets could not be loaded.') }
+})
+app.get('/api/staff/assignees', staffOnly, async (_request, response) => { try { const items = await prisma.user.findMany({ where: { active: true, role: { in: ['IT_STAFF', 'ADMINISTRATOR'] } }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true, role: true, active: true } }); response.json({ items }) } catch { ticketError(response, 500, 'ASSIGNEES_FAILED', 'Assignees could not be loaded.') } })
+app.patch('/api/tickets/:ticketId/assignment', staffActor, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const id = positiveId(request.params.ticketId); const b = request.body; if (!id || !b || !['claim','assign'].includes(b.action) || !Number.isInteger(b.version) || (b.action === 'assign' && !Number.isInteger(b.assignedToId))) { ticketError(response, 400, 'INPUT_INVALID', 'Assignment input is invalid.'); return }
+  try { const t = await prisma.ticket.findUnique({ where: { id } }); if (!t) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return } if (t.version !== b.version) { ticketError(response, 409, 'TICKET_VERSION_CONFLICT', 'Ticket version is stale.'); return } if (['CLOSED','CANCELLED'].includes(t.currentStatus)) { ticketError(response, 409, 'TICKET_TERMINAL', 'Ticket is terminal.'); return } const target = b.action === 'claim' ? request.user!.id : b.assignedToId; if (b.action === 'claim' && t.assignedToId) { ticketError(response, 409, 'ALREADY_ASSIGNED', 'Ticket is already assigned.'); return } const user = await prisma.user.findUnique({ where: { id: target } }); if (!user?.active || !['IT_STAFF','ADMINISTRATOR'].includes(user.role)) { ticketError(response, 409, 'ASSIGNEE_UNAVAILABLE', 'Assignee is unavailable.'); return } const updated = await prisma.ticket.update({ where: { id }, data: { assignedToId: target, version: { increment: 1 } }, include: ticketDetailInclude }); response.json(ticketDetail(updated as any)) } catch { ticketError(response, 500, 'ASSIGNMENT_FAILED', 'Assignment could not be saved.') }
+})
+app.patch('/api/tickets/:ticketId/it-priority', staffOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => { const id = positiveId(request.params.ticketId), b = request.body; if (!id || !['LOW','MEDIUM','HIGH'].includes(b?.itPriority) || !Number.isInteger(b?.version)) { ticketError(response, 400, 'INPUT_INVALID', 'Priority input is invalid.'); return } try { const t = await prisma.ticket.findUnique({ where: { id } }); if (!t) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return } if (t.version !== b.version) { ticketError(response, 409, 'TICKET_VERSION_CONFLICT', 'Ticket version is stale.'); return } if (['CLOSED','CANCELLED'].includes(t.currentStatus)) { ticketError(response, 409, 'TICKET_TERMINAL', 'Ticket is terminal.'); return } const updated = await prisma.ticket.update({ where: { id }, data: { itPriority: b.itPriority, version: { increment: 1 } }, include: ticketDetailInclude }); response.json(ticketDetail(updated as any)) } catch { ticketError(response, 500, 'PRIORITY_UPDATE_FAILED', 'Priority could not be updated.') } })
+app.patch('/api/tickets/:ticketId/status', staffActor, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => { const id = positiveId(request.params.ticketId), b = request.body; if (!id || !b?.confirmed || !Number.isInteger(b.version) || typeof b.currentStatus !== 'string') { ticketError(response, 400, 'CONFIRMATION_REQUIRED', 'Confirmation is required.'); return } try { const t = await prisma.ticket.findUnique({ where: { id }, include: { assignedTo: true } }); if (!t) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return } if (t.version !== b.version) { ticketError(response, 409, 'TICKET_VERSION_CONFLICT', 'Ticket version is stale.'); return } if (!workflowTransitions[t.currentStatus]?.includes(b.currentStatus)) { ticketError(response, 409, 'STATUS_TRANSITION_INVALID', 'Status transition is invalid.'); return } if (['RESOLVED','CLOSED','CANCELLED'].includes(b.currentStatus) && (typeof b.reason !== 'string' || b.reason.trim().length < 3 || b.reason.trim().length > 200)) { ticketError(response, 400, 'STATUS_REASON_INVALID', 'A valid reason is required.'); return } if (!['RESOLVED','CLOSED','CANCELLED'].includes(b.currentStatus) && b.reason !== undefined) { ticketError(response, 400, 'STATUS_REASON_INVALID', 'Reason is not allowed.'); return } if (['IN_PROGRESS','RESOLVED'].includes(b.currentStatus) && (!t.assignedTo?.active || !['IT_STAFF','ADMINISTRATOR'].includes(t.assignedTo.role))) { ticketError(response, 409, 'ACTIVE_OWNER_REQUIRED', 'An active owner is required.'); return } const updated = await prisma.ticket.update({ where: { id }, data: { currentStatus: b.currentStatus, version: { increment: 1 }, statusChangedById: request.user!.id, statusChangedAt: new Date(), statusChangeReason: b.reason?.trim() ?? null }, include: ticketDetailInclude }); response.json(ticketDetail(updated as any)) } catch { ticketError(response, 500, 'STATUS_UPDATE_FAILED', 'Status could not be updated.') } })
+app.get('/api/tickets/:ticketId/internal-notes', staffOnly, async (request, response) => { try { const t = await staffTicket(positiveId(request.params.ticketId) ?? -1); if (!t) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return } const items = await prisma.internalNote.findMany({ where: { ticketId: t.id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, body: true, createdAt: true, author: { select: { id: true, name: true, role: true } } } }); response.json({ items: items.map(n => ({ ...n, createdAt: n.createdAt.toISOString() })) }) } catch { ticketError(response, 500, 'NOTE_LIST_FAILED', 'Notes could not be loaded.') } })
+app.post('/api/tickets/:ticketId/internal-notes', staffOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => { const body = typeof request.body?.body === 'string' ? request.body.body.trim() : ''; if (!body || [...body].length > 2000) { ticketError(response, 400, 'NOTE_INVALID', 'Note must be 1–2000 characters.'); return } try { const t = await staffTicket(positiveId(request.params.ticketId) ?? -1); if (!t) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return } const n = await prisma.internalNote.create({ data: { ticketId: t.id, authorId: request.user!.id, body }, select: { id: true, body: true, createdAt: true, author: { select: { id: true, name: true, role: true } } } }); response.status(201).json({ ...n, createdAt: n.createdAt.toISOString() }) } catch { ticketError(response, 500, 'NOTE_CREATE_FAILED', 'Note could not be created.') } })
+
+const adminOnly = createAuthMiddleware(createSessionResolver(prisma), { roles: ['ADMINISTRATOR'] })
+const userProjection = (u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active, mustChangePassword: u.mustChangePassword, createdAt: u.createdAt?.toISOString?.() ?? u.createdAt, updatedAt: u.updatedAt?.toISOString?.() ?? u.updatedAt })
+app.get('/api/admin/users', adminOnly, async (request, response) => { const search = typeof request.query.search === 'string' ? request.query.search.trim() : ''; const role = typeof request.query.role === 'string' ? request.query.role : undefined; if (Object.keys(request.query).some(k => !['search','role'].includes(k)) || search.length > 120 || (role && !['REQUESTER','IT_STAFF','ADMINISTRATOR'].includes(role))) { ticketError(response, 400, 'QUERY_INVALID', 'User query is invalid.'); return } try { const users = await prisma.user.findMany({ where: { ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { email: { contains: search, mode: 'insensitive' } }] } : {}), ...(role ? { role: role as any } : {}) }, orderBy: [{ name: 'asc' }, { id: 'asc' }] }); response.json({ items: users.map(userProjection) }) } catch { ticketError(response, 500, 'USER_LIST_FAILED', 'Users could not be loaded.') } })
+app.post('/api/admin/users', adminOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => { const b = request.body; if (!b || typeof b.name !== 'string' || typeof b.email !== 'string' || !['REQUESTER','IT_STAFF','ADMINISTRATOR'].includes(b.role) || typeof b.active !== 'boolean' || typeof b.password !== 'string' || b.password !== b.confirmPassword || passwordValidationError(b.password, b.confirmPassword) === 'PASSWORD_INVALID') { ticketError(response, 400, 'USER_INPUT_INVALID', 'User input or password confirmation is invalid.'); return } try { const email=b.email.trim().toLowerCase(); const u=await prisma.user.create({data:{name:b.name.trim(),email,passwordHash:await hashPassword(b.password),role:b.role,active:b.active,mustChangePassword:true}}); response.status(201).json(userProjection(u)) } catch { ticketError(response, 409, 'EMAIL_DUPLICATE', 'Email is already in use.') } })
+app.patch('/api/admin/users/:userId', adminOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => { const id=positiveId(request.params.userId), b=request.body; if (!id || !b || typeof b.name!=='string' || typeof b.email!=='string' || !['REQUESTER','IT_STAFF','ADMINISTRATOR'].includes(b.role) || typeof b.active!=='boolean') { ticketError(response,400,'USER_INPUT_INVALID','User input is invalid.'); return } try { const target=await prisma.user.findUnique({where:{id}}); if(!target){ticketError(response,404,'USER_NOT_FOUND','User was not found.');return} if(id===request.user!.id && !b.active){ticketError(response,409,'SELF_DEACTIVATION_FORBIDDEN','You cannot deactivate your own account.');return} if(id===request.user!.id && b.role!==target.role){ticketError(response,409,'SELF_ROLE_CHANGE_FORBIDDEN','You cannot change your own role.');return} if(target.role==='ADMINISTRATOR' && target.active && (b.role!=='ADMINISTRATOR'||!b.active)){const count=await prisma.user.count({where:{role:'ADMINISTRATOR',active:true}});if(count<=1){ticketError(response,409,'LAST_ADMIN_REQUIRED','At least one active Administrator is required.');return}} const u=await prisma.user.update({where:{id},data:{name:b.name.trim(),email:b.email.trim().toLowerCase(),role:b.role,active:b.active}});response.json(userProjection(u)) } catch { ticketError(response,409,'EMAIL_DUPLICATE','Email is already in use.') } })
+app.post('/api/admin/users/:userId/password', adminOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => { const id=positiveId(request.params.userId), b=request.body; if(!id||typeof b?.password!=='string'||b.password!==b.confirmPassword||passwordValidationError(b.password,b.confirmPassword)==='PASSWORD_INVALID'){ticketError(response,400,'PASSWORD_INVALID','Password or confirmation is invalid.');return} try {const u=await prisma.user.update({where:{id},data:{passwordHash:await hashPassword(b.password),mustChangePassword:true}});await prisma.session.updateMany({where:{userId:id,revokedAt:null},data:{revokedAt:new Date()}});response.json(userProjection(u))}catch{ticketError(response,404,'USER_NOT_FOUND','User was not found.')}})
 
 app.get('/api/health', (_request, response) => {
   response.status(200).json({ status: 'ok', service: 'TokTickIT API' })

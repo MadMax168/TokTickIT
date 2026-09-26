@@ -1,0 +1,15 @@
+.auth-shell { --zen-primary:#006B3C; --zen-secondary:#0B7A46; --zen-pale:#EAF6EF; --zen-page:#F5F7F6; --zen-surface:#FFF; background:var(--zen-page); color:#243b30; min-height:100vh; padding:24px; font:1rem/1.5 Inter,system-ui,sans-serif; }
+.auth-shell header,.auth-shell nav { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-bottom:24px; }
+.auth-shell header { background:var(--zen-primary);color:white;padding:16px;border-radius:8px; }
+.auth-role { display:block;font-size:.9rem; }
+.auth-card { max-width:480px;margin:32px auto;background:var(--zen-surface);border:1px solid #bacfc2;border-radius:8px;padding:24px; }
+.auth-shell label {display:block;font-weight:600;margin:16px 0;}
+.auth-shell input {display:block;width:100%;min-height:44px;border:1px solid #6a8274;border-radius:4px;padding:8px;font:inherit;}
+.auth-shell button {min-height:44px;margin:4px;padding:8px 16px;border:1px solid var(--zen-primary);background:var(--zen-primary);color:white;border-radius:4px;}
+.auth-shell header button {border-color:white;}
+.auth-shell button:disabled {opacity:.6;cursor:not-allowed;}
+.auth-shell a {color:var(--zen-primary);padding:8px;}
+.auth-shell :focus-visible {outline:3px solid var(--zen-secondary);outline-offset:3px;}
+.auth-shell [role=alert] {color:#8b1a1a;white-space:normal;overflow-wrap:anywhere;}
+.auth-shell [role=status] {background:var(--zen-pale);padding:8px;}
+@media(max-width:767px){.auth-shell{padding:12px}.auth-card{padding:16px}.auth-shell nav{align-items:stretch;flex-direction:column}.auth-shell button{max-width:100%;white-space:normal}}
