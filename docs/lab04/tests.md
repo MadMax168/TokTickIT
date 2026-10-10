@@ -13,12 +13,12 @@ All tests are planned; Final remains `Planned`.
 | API-07 | API/integration | AC-02 | Requester metrics/ownership | Only requester data, exact metrics | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | API-08 | API/integration | AC-06 | Staff/Admin metrics/drill-down | Exact aggregates, max 5, links | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
 | API-09 | API/integration | BR-12 | Asia/Bangkok boundaries/empty | Correct boundary and zero behavior | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| UI-01 | UI component | AC-05 | Actions list/create/edit/read-only | Required modes and stable order | `client/src/**/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-02 | UI component | AC-04 | Status controls/confirmation | Permitted controls and refresh | `client/src/**/lab-04/TicketWorkflow.test.tsx` | Planned |
-| UI-03 | UI component | AC-02/06 | Dashboard cards/drill-down | Exact cards/routes | `client/src/**/lab-04/RequesterDashboard.test.tsx`; `client/src/**/lab-04/StaffDashboard.test.tsx` | Planned |
-| UI-04 | UI style | AC-07 | Zen Green/focus/labels/non-color | Checklist passes | `client/src/**/lab-04/StaffDashboard.test.tsx` | Planned |
-| UI-05 | Responsive | AC-07 | Desktop/tablet/mobile | No clipping/scroll | `client/src/**/lab-04/RequesterDashboard.test.tsx` | Planned |
-| UI-06 | UI component | AC-03/07 | Loading/empty/forbidden/conflict/not-found/failure | Correct recovery and retained input | `client/src/**/lab-04/ActionsTaken.test.tsx` | Planned |
+| UI-01 | UI component | AC-05 | Actions list/create/edit/read-only | Required modes and stable order | `client/src/lab04/ActionsTaken.test.tsx` | Planned |
+| UI-02 | UI component | AC-04 | Status controls/confirmation | Permitted controls and refresh | `client/src/lab04/TicketWorkflow.test.tsx` | Planned |
+| UI-03 | UI component | AC-02/06 | Dashboard cards/drill-down | Exact cards/routes | `client/src/lab04/RequesterDashboard.test.tsx`; `client/src/lab04/StaffDashboard.test.tsx` | Planned |
+| UI-04 | UI style | AC-07 | Zen Green/focus/labels/non-color | Checklist passes | `client/src/lab04/StaffDashboard.test.tsx` | Planned |
+| UI-05 | Responsive | AC-07 | Desktop/tablet/mobile | No clipping/scroll | `client/src/lab04/RequesterDashboard.test.tsx` | Planned |
+| UI-06 | UI component | AC-03/07 | Loading/empty/forbidden/conflict/not-found/failure | Correct recovery and retained input | `client/src/lab04/ActionsTaken.test.tsx` | Planned |
 | AUTH-01 | Authorization | AC-03/05 | Ownership and role bypass | Backend rejects bypass | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | MIG-01 | Migration/regression | AC-08 | Legacy data/zero-action Ticket | Existing data preserved | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | MIG-02 | Migration/regression | AC-08 | Idempotent seed/status/priority fixtures | Repeat safe, fixtures present | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
