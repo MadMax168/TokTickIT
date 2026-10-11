@@ -214,7 +214,7 @@ app.post('/api/tickets', requesterOnly, (request, response, next) => { if (!requ
   }
 })
 
-type TicketListQuery = { search: string; categoryId?: number; relatedSystemId?: number; requestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH'; currentStatus?: 'NEW'; sortBy: 'ticketDate' | 'updatedAt' | 'ticketNumber' | 'summary'; sortDirection: 'asc' | 'desc'; page: number; pageSize: 10 | 20 | 50 }
+type TicketListQuery = { search: string; categoryId?: number; relatedSystemId?: number; requestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH'; currentStatus?: string; updatedSince?: Date; sortBy: 'ticketDate' | 'updatedAt' | 'ticketNumber' | 'summary'; sortDirection: 'asc' | 'desc'; page: number; pageSize: 10 | 20 | 50 }
 
 function parseTicketListQuery(query: express.Request['query']): TicketListQuery | null {
   if (Object.values(query).some((value) => Array.isArray(value))) return null
@@ -222,9 +222,10 @@ function parseTicketListQuery(query: express.Request['query']): TicketListQuery 
   const positive = (raw: string | undefined) => raw !== undefined && /^\d+$/.test(raw) && Number(raw) > 0 && Number.isSafeInteger(Number(raw)) ? Number(raw) : undefined
   const search = (value('search') ?? '').trim(); const categoryId = value('categoryId') === undefined ? undefined : positive(value('categoryId')); const relatedSystemId = value('relatedSystemId') === undefined ? undefined : positive(value('relatedSystemId'))
   const page = value('page') === undefined ? 1 : positive(value('page')); const pageSize = value('pageSize') === undefined ? 10 : positive(value('pageSize'))
-  const priority = value('requestedPriority'); const status = value('currentStatus'); const sortBy = value('sortBy') ?? 'ticketDate'; const sortDirection = value('sortDirection') ?? 'desc'
-  if (search.length > 120 || (value('categoryId') !== undefined && categoryId === undefined) || (value('relatedSystemId') !== undefined && relatedSystemId === undefined) || page === undefined || ![10, 20, 50].includes(pageSize ?? 0) || (priority !== undefined && !['LOW', 'MEDIUM', 'HIGH'].includes(priority)) || (status !== undefined && status !== 'NEW') || !['ticketDate', 'updatedAt', 'ticketNumber', 'summary'].includes(sortBy) || !['asc', 'desc'].includes(sortDirection)) return null
-  return { search, categoryId, relatedSystemId, requestedPriority: priority as TicketListQuery['requestedPriority'], currentStatus: status as TicketListQuery['currentStatus'], sortBy: sortBy as TicketListQuery['sortBy'], sortDirection: sortDirection as TicketListQuery['sortDirection'], page, pageSize: pageSize as TicketListQuery['pageSize'] }
+  const priority = value('requestedPriority'); const status = value('currentStatus'); const updatedSinceRaw = value('updatedSince'); const updatedSince = updatedSinceRaw ? new Date(updatedSinceRaw) : undefined; const sortBy = value('sortBy') ?? 'ticketDate'; const sortDirection = value('sortDirection') ?? 'desc'
+  const statuses = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'RESOLVED', 'CLOSED', 'REOPENED', 'CANCELLED', 'open']
+  if (search.length > 120 || (value('categoryId') !== undefined && categoryId === undefined) || (value('relatedSystemId') !== undefined && relatedSystemId === undefined) || page === undefined || ![10, 20, 50].includes(pageSize ?? 0) || (priority !== undefined && !['LOW', 'MEDIUM', 'HIGH'].includes(priority)) || (status !== undefined && !statuses.includes(status)) || (updatedSinceRaw !== undefined && (!updatedSince || Number.isNaN(updatedSince.getTime()))) || !['ticketDate', 'updatedAt', 'ticketNumber', 'summary'].includes(sortBy) || !['asc', 'desc'].includes(sortDirection)) return null
+  return { search, categoryId, relatedSystemId, requestedPriority: priority as TicketListQuery['requestedPriority'], currentStatus: status, updatedSince, sortBy: sortBy as TicketListQuery['sortBy'], sortDirection: sortDirection as TicketListQuery['sortDirection'], page, pageSize: pageSize as TicketListQuery['pageSize'] }
 }
 
 function listContextFailure(_request: express.Request, response: express.Response, next: express.NextFunction) {
@@ -234,7 +235,8 @@ function listContextFailure(_request: express.Request, response: express.Respons
 app.get('/api/tickets', listContextFailure, requesterOnly, async (request, response) => {
   const query = parseTicketListQuery(request.query)
   if (!query) { ticketError(response, 400, 'TICKET_QUERY_INVALID', 'Ticket query is invalid.'); return }
-  const where = { requesterId: request.user!.id, ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }), ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }), ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }), ...(query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }), ...(query.search === '' ? {} : { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' as const } }, { summary: { contains: query.search, mode: 'insensitive' as const } }] }) }
+  const statusFilter = query.currentStatus === 'open' ? { currentStatus: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED'] } } : query.currentStatus === undefined ? {} : { currentStatus: query.currentStatus }
+  const where: any = { requesterId: request.user!.id, ...(query.categoryId === undefined ? {} : { categoryId: query.categoryId }), ...(query.relatedSystemId === undefined ? {} : { relatedSystemId: query.relatedSystemId }), ...(query.requestedPriority === undefined ? {} : { requestedPriority: query.requestedPriority }), ...statusFilter, ...(query.updatedSince === undefined ? {} : { updatedAt: { gte: query.updatedSince } }), ...(query.search === '' ? {} : { OR: [{ ticketNumber: { contains: query.search, mode: 'insensitive' as const } }, { summary: { contains: query.search, mode: 'insensitive' as const } }] }) }
   try {
     const [totalItems, tickets] = await Promise.all([prisma.ticket.count({ where }), prisma.ticket.findMany({ where, orderBy: [{ [query.sortBy]: query.sortDirection }, { id: 'desc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize, select: { id: true, ticketNumber: true, ticketDate: true, requestedPriority: true, summary: true, currentStatus: true, updatedAt: true, requester: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, relatedSystem: { select: { id: true, name: true } } } })])
     response.status(200).json({ items: tickets.map((ticket) => ({ id: ticket.id, ticketNumber: ticket.ticketNumber, ticketDate: ticket.ticketDate.toISOString(), requester: ticket.requester, category: ticket.category, relatedSystem: ticket.relatedSystem, requestedPriority: ticket.requestedPriority, summary: ticket.summary, currentStatus: ticket.currentStatus, lastUpdated: ticket.updatedAt.toISOString() })), page: query.page, pageSize: query.pageSize, totalItems, totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize) })
@@ -516,6 +518,23 @@ app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContext
 })
 
 const staffOnly = createAuthMiddleware(createSessionResolver(prisma), { roles: ['IT_STAFF', 'ADMINISTRATOR'] })
+const dashboardRecentStart = () => {
+  const now = new Date(); const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now); const date = Object.fromEntries(parts.filter(p => p.type !== 'literal').map(p => [p.type, p.value])); return new Date(Date.UTC(Number(date.year), Number(date.month) - 1, Number(date.day) - 7) - 7 * 60 * 60 * 1000)
+}
+const dashboardTicket = (ticket: any) => ({ id: ticket.id, ticketNumber: ticket.ticketNumber, summary: ticket.summary, currentStatus: ticket.currentStatus, itPriority: ticket.itPriority, updatedAt: ticket.updatedAt.toISOString(), drillDown: `/tickets/${ticket.id}` })
+const dashboardItems: any = { select: { id: true, ticketNumber: true, summary: true, currentStatus: true, itPriority: true, updatedAt: true }, orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }], take: 5 }
+app.get('/api/requester/dashboard', requesterOnly, async (request, response) => {
+  const start = dashboardRecentStart(); const requesterId = request.user!.id
+  try { const recent = { requesterId, updatedAt: { gte: start, lt: new Date() } }; const [totalOpen, waitingForRequester, recentlyUpdated, recentlyResolved, recentUpdatedItems, recentResolvedItems] = await Promise.all([
+    prisma.ticket.count({ where: { requesterId, currentStatus: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED'] } } }), prisma.ticket.count({ where: { requesterId, currentStatus: 'WAITING_FOR_REQUESTER' } }), prisma.ticket.count({ where: recent }), prisma.ticket.count({ where: { ...recent, currentStatus: { in: ['RESOLVED', 'CLOSED'] } } }), prisma.ticket.findMany({ where: recent, ...dashboardItems }), prisma.ticket.findMany({ where: { ...recent, currentStatus: { in: ['RESOLVED', 'CLOSED'] } }, ...dashboardItems }),
+  ]); response.json({ metrics: { totalOpen, waitingForRequester, recentlyUpdated, recentlyResolved }, recentUpdatedItems: recentUpdatedItems.map(dashboardTicket), recentResolvedItems: recentResolvedItems.map(dashboardTicket), generatedAt: new Date().toISOString() }) } catch { ticketError(response, 500, 'DASHBOARD_FAILED', 'Dashboard data could not be loaded.') }
+})
+app.get('/api/staff/dashboard', staffOnly, async (request, response) => {
+  const start = dashboardRecentStart();
+  try { const recent = { updatedAt: { gte: start, lt: new Date() } }; const [unassigned, ownedByCurrentUser, byStatus, byPriority, recentlyUpdated, recentItems] = await Promise.all([
+    prisma.ticket.count({ where: { assignedToId: null } }), prisma.ticket.count({ where: { assignedToId: request.user!.id } }), prisma.ticket.groupBy({ by: ['currentStatus'], _count: { _all: true } }), prisma.ticket.groupBy({ by: ['itPriority'], _count: { _all: true } }), prisma.ticket.count({ where: recent }), prisma.ticket.findMany({ where: recent, ...dashboardItems }),
+  ]); const statuses = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'RESOLVED', 'CLOSED', 'REOPENED', 'CANCELLED']; const priorities = ['LOW', 'MEDIUM', 'HIGH']; response.json({ metrics: { unassigned, ownedByCurrentUser, byStatus: Object.fromEntries(statuses.map(status => [status, byStatus.find((x: any) => x.currentStatus === status)?._count._all ?? 0])), byPriority: Object.fromEntries(priorities.map(priority => [priority, byPriority.find((x: any) => x.itPriority === priority)?._count._all ?? 0])), recentlyUpdated }, recentItems: recentItems.map(dashboardTicket), generatedAt: new Date().toISOString() }) } catch { ticketError(response, 500, 'DASHBOARD_FAILED', 'Dashboard data could not be loaded.') }
+})
 const staffActor = createAuthMiddleware(createSessionResolver(prisma), { roles: ['IT_STAFF'] })
 const actionIdempotency = new Map<string, unknown>()
 const actionTakenResponse = (action: any) => ({
