@@ -85,4 +85,16 @@ export async function seedLab03(db: PrismaClient, passwordFor: (email: string) =
         await db.publicComment.upsert({ where: { seedKey }, update: {}, create: { seedKey, ticketId: saved[ticket].id, authorId: users[author].id, body, createdAt: new Date(`2026-09-01T${time}:00Z`) } });
     for (const [seedKey, ticket, author, time, body] of notes)
         await db.internalNote.upsert({ where: { seedKey }, update: {}, create: { seedKey, ticketId: saved[ticket].id, authorId: users[author].id, body, createdAt: new Date(`2026-09-01T${time}:00Z`) } });
+    const actions = [
+        [2, 5, 6, '2026-09-01T10:20:00Z', 'Checked the training VPN profile.', 'Profile was corrected and retested.', false, null],
+        [4, 6, 7, '2026-09-01T10:25:00Z', 'Collected simulated Wi-Fi diagnostics.', 'Diagnostics attached to the training record.', true, 'Requester must confirm connection stability.'],
+        [4, 7, 6, '2026-09-01T10:40:00Z', 'Reviewed the simulated diagnostic results.', 'No further fault found in the demo environment.', false, null],
+    ] as const;
+    for (const [ticket, performer, assignee, actionDateTime, actionDescription, result, followUpRequired, followUpNote] of actions) {
+        const existing = await db.actionTaken.findFirst({ where: { ticketId: saved[ticket].id, actionDateTime } });
+        if (!existing) await db.actionTaken.create({ data: {
+            ticketId: saved[ticket].id, actionDateTime: new Date(actionDateTime), actionDescription, result,
+            performedById: users[performer].id, assigneeId: users[assignee].id, followUpRequired, followUpNote,
+        } });
+    }
 }

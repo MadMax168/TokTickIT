@@ -517,6 +517,85 @@ app.delete('/api/tickets/:ticketId/attachments/:attachmentId', attachmentContext
 
 const staffOnly = createAuthMiddleware(createSessionResolver(prisma), { roles: ['IT_STAFF', 'ADMINISTRATOR'] })
 const staffActor = createAuthMiddleware(createSessionResolver(prisma), { roles: ['IT_STAFF'] })
+const actionIdempotency = new Map<string, unknown>()
+const actionTakenResponse = (action: any) => ({
+  id: action.id,
+  ticketId: action.ticketId,
+  actionDateTime: action.actionDateTime.toISOString(),
+  actionDescription: action.actionDescription,
+  result: action.result,
+  performedBy: action.performedBy,
+  assignee: action.assignee,
+  followUpRequired: action.followUpRequired,
+  followUpNote: action.followUpNote,
+  attachmentNotes: action.attachmentNotes,
+  createdAt: action.createdAt.toISOString(),
+  updatedAt: action.updatedAt.toISOString(),
+  version: action.version,
+})
+const actionTakenInclude = {
+  performedBy: { select: { id: true, name: true, role: true } },
+  assignee: { select: { id: true, name: true, role: true, active: true } },
+} as const
+const actionText = (value: unknown, max: number) => typeof value === 'string' && value.trim().length > 0 && [...value].length <= max
+const actionInput = (body: any) => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null
+  const allowed = ['actionDateTime', 'actionDescription', 'result', 'assigneeId', 'followUpRequired', 'followUpNote', 'attachmentNotes', 'version']
+  if (Object.keys(body).some(key => !allowed.includes(key))) return null
+  const date = typeof body.actionDateTime === 'string' ? new Date(body.actionDateTime) : null
+  if (!date || Number.isNaN(date.getTime()) || !actionText(body.actionDescription, 4000) || !actionText(body.result, 4000) || !Number.isInteger(body.assigneeId) || typeof body.followUpRequired !== 'boolean') return null
+  if (body.followUpRequired && !actionText(body.followUpNote, 2000)) return null
+  if (!body.followUpRequired && body.followUpNote !== undefined && body.followUpNote !== null && body.followUpNote !== '') return null
+  if (body.attachmentNotes !== undefined && body.attachmentNotes !== null && typeof body.attachmentNotes !== 'string') return null
+  return { actionDateTime: date, actionDescription: body.actionDescription.trim(), result: body.result.trim(), assigneeId: body.assigneeId, followUpRequired: body.followUpRequired, followUpNote: body.followUpRequired ? body.followUpNote.trim() : null, attachmentNotes: typeof body.attachmentNotes === 'string' ? body.attachmentNotes.trim() : null }
+}
+const accessibleActionTicket = async (request: express.Request, id: number) => {
+  if (request.user?.role === 'REQUESTER') return prisma.ticket.findFirst({ where: { id, requesterId: request.user.id }, select: { id: true } })
+  return prisma.ticket.findUnique({ where: { id }, select: { id: true } })
+}
+const validActionAssignee = async (id: number) => prisma.user.findFirst({ where: { id, active: true, role: { in: ['IT_STAFF', 'ADMINISTRATOR'] } }, select: { id: true, name: true, role: true, active: true } })
+
+app.get('/api/tickets/:ticketId/actions-taken', supportOrRequester, async (request, response) => {
+  const ticketId = positiveId(request.params.ticketId)
+  const limit = request.query.limit === undefined ? 100 : Number(request.query.limit)
+  if (!ticketId || !Number.isInteger(limit) || limit < 1 || limit > 100) { ticketError(response, 400, 'ACTIONS_QUERY_INVALID', 'Actions Taken query is invalid.'); return }
+  try {
+    if (!await accessibleActionTicket(request, ticketId)) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return }
+    const items = await prisma.actionTaken.findMany({ where: { ticketId }, orderBy: [{ actionDateTime: 'asc' }, { id: 'asc' }], take: limit, include: actionTakenInclude })
+    response.json({ items: items.map(actionTakenResponse) })
+  } catch { ticketError(response, 500, 'ACTIONS_LIST_FAILED', 'Actions Taken could not be loaded.') }
+})
+
+app.post('/api/tickets/:ticketId/actions-taken', staffOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const ticketId = positiveId(request.params.ticketId); const input = actionInput(request.body)
+  if (!ticketId || !input) { ticketError(response, 400, 'ACTION_INPUT_INVALID', 'Action Taken input is invalid.'); return }
+  const key = request.get('Idempotency-Key') ?? (typeof request.body?.clientRequestId === 'string' ? request.body.clientRequestId : undefined)
+  const cacheKey = key ? `${request.user!.id}:${ticketId}:${key}` : undefined
+  if (cacheKey && actionIdempotency.has(cacheKey)) { response.status(200).json(actionIdempotency.get(cacheKey)); return }
+  try {
+    if (!await accessibleActionTicket(request, ticketId)) { ticketError(response, 404, 'TICKET_NOT_FOUND', 'Ticket was not found.'); return }
+    const assignee = await validActionAssignee(input.assigneeId)
+    if (!assignee) { ticketError(response, 409, 'ASSIGNEE_UNAVAILABLE', 'Assignee is unavailable.'); return }
+    const action = await prisma.actionTaken.create({ data: { ...input, ticketId, performedById: request.user!.id }, include: actionTakenInclude })
+    const body = actionTakenResponse(action); if (cacheKey) actionIdempotency.set(cacheKey, body)
+    response.status(201).json(body)
+  } catch { ticketError(response, 500, 'ACTION_CREATE_FAILED', 'Action Taken could not be created.') }
+})
+
+app.patch('/api/tickets/:ticketId/actions-taken/:actionId', staffOnly, (request, response, next) => { if (!requireCsrf(request, response, appOrigin)) return; next() }, async (request, response) => {
+  const ticketId = positiveId(request.params.ticketId); const actionId = positiveId(request.params.actionId); const input = actionInput(request.body)
+  if (!ticketId || !actionId || !input || !Number.isInteger(request.body?.version)) { ticketError(response, 400, 'ACTION_INPUT_INVALID', 'Action Taken input is invalid.'); return }
+  try {
+    const existing = await prisma.actionTaken.findFirst({ where: { id: actionId, ticketId }, select: { id: true, version: true } })
+    if (!existing) { ticketError(response, 404, 'ACTION_NOT_FOUND', 'Action Taken was not found.'); return }
+    const assignee = await validActionAssignee(input.assigneeId)
+    if (!assignee) { ticketError(response, 409, 'ASSIGNEE_UNAVAILABLE', 'Assignee is unavailable.'); return }
+    const updated = await prisma.actionTaken.updateMany({ where: { id: actionId, ticketId, version: request.body.version }, data: { ...input, version: { increment: 1 } } })
+    if (!updated.count) { ticketError(response, 409, 'TICKET_VERSION_CONFLICT', 'Action Taken version is stale.'); return }
+    const action = await prisma.actionTaken.findUnique({ where: { id: actionId }, include: actionTakenInclude })
+    response.json(actionTakenResponse(action))
+  } catch { ticketError(response, 500, 'ACTION_UPDATE_FAILED', 'Action Taken could not be updated.') }
+})
 const workflowTransitions: Record<string, string[]> = { NEW: ['OPEN', 'CANCELLED'], OPEN: ['IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'CANCELLED'], IN_PROGRESS: ['WAITING_FOR_REQUESTER', 'RESOLVED', 'CANCELLED'], WAITING_FOR_REQUESTER: ['IN_PROGRESS', 'RESOLVED', 'CANCELLED'], RESOLVED: ['CLOSED', 'REOPENED'], REOPENED: ['OPEN', 'IN_PROGRESS', 'CANCELLED'], CLOSED: [], CANCELLED: [] }
 const staffTicket = async (id: number) => prisma.ticket.findUnique({ where: { id }, include: ticketDetailInclude })
 const queueQuery = (q: express.Request['query']) => {
