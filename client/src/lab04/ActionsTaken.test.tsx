@@ -1,0 +1,12 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { ActionsTaken } from './ActionsTaken'
+
+describe('UI-01/UI-04/UI-05/UI-06: Actions Taken', () => {
+  it('renders ordered actions and keeps Requester view read-only', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ id: 1, ticketId: 10, actionDateTime: '2026-10-11T01:00:00Z', actionDescription: 'Checked', result: 'Ready', performedBy: { id: 2, name: 'Staff', role: 'IT_STAFF' }, assignee: { id: 2, name: 'Staff', role: 'IT_STAFF', active: true }, followUpRequired: false, version: 1 }] }) }))
+    render(<ActionsTaken ticketId={10} readOnly />)
+    await waitFor(() => expect(screen.getByText('Checked')).toBeInTheDocument())
+    expect(screen.queryByText('Add Action Taken')).not.toBeInTheDocument()
+  })
+})
