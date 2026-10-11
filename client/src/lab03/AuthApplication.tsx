@@ -27,7 +27,7 @@ export default function AuthApplication() {
     const previousPath = useRef<string | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
     const focusField = (name: string) => formRef.current?.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.focus();
-    const move = (value: string) => { window.history.replaceState({}, '', value); setPath(value); };
+    const move = (value: string) => { window.history.replaceState({}, '', value); const next = new URL(value, window.location.origin); setPath(next.pathname + next.search); };
     const clearPasswords = () => { setPassword(''); setCurrent(''); setNext(''); setConfirm(''); };
     const apply = (value: Auth) => {
         if (!value?.user || !Object.hasOwn(defaults, value.user.role))
@@ -192,7 +192,7 @@ export default function AuthApplication() {
     </form>
    </section> : auth && !logoutPending && <>
     <nav aria-label="Application navigation">{links[auth.user.role].map(([label, url]) => <a key={url} href={url} aria-current={path === url ? 'page' : undefined} onClick={e => { e.preventDefault(); move(url); }}>{label}</a>)}<a href="/change-password" onClick={e => { e.preventDefault(); previousPath.current = path; move('/change-password'); }}>Change Password</a></nav>
-    {auth.user.role === 'REQUESTER' && path === '/dashboard' ? <RequesterDashboard onNavigate={move} /> : (auth.user.role !== 'REQUESTER' && path === '/staff/dashboard') ? <StaffDashboard onNavigate={move} /> : auth.user.role === 'REQUESTER' ? <RequesterWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : auth.user.role === 'ADMINISTRATOR' && path === '/admin/users' ? <AdminWorkspace path={path} csrfToken={auth.csrfToken} userId={auth.user.id} /> : (auth.user.role === 'IT_STAFF' || path === '/staff/tickets') ? <StaffWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : links[auth.user.role].some(([, url]) => path === url) ? <section><h1>{links[auth.user.role].find(([, url]) => path === url)?.[0]}</h1><p>This page is not available yet.</p></section> : <section><h1>Access unavailable</h1><a href={defaults[auth.user.role]}>Return to your home page</a></section>}
+    {auth.user.role === 'REQUESTER' && path === '/dashboard' ? <RequesterDashboard onNavigate={move} /> : (auth.user.role !== 'REQUESTER' && path === '/staff/dashboard') ? <StaffDashboard onNavigate={move} /> : auth.user.role === 'REQUESTER' ? <RequesterWorkspace path={path.includes('?') ? path.split('?')[0] : path} csrfToken={auth.csrfToken} onNavigate={move} /> : auth.user.role === 'ADMINISTRATOR' && path === '/admin/users' ? <AdminWorkspace path={path} csrfToken={auth.csrfToken} userId={auth.user.id} /> : (auth.user.role === 'IT_STAFF' || path.startsWith('/staff/tickets')) ? <StaffWorkspace path={path.includes('?') ? path.split('?')[0] : path} csrfToken={auth.csrfToken} onNavigate={move} /> : links[auth.user.role].some(([, url]) => path === url) ? <section><h1>{links[auth.user.role].find(([, url]) => path === url)?.[0]}</h1><p>This page is not available yet.</p></section> : <section><h1>Access unavailable</h1><a href={defaults[auth.user.role]}>Return to your home page</a></section>}
    </>}
   </>}
  </main>;
