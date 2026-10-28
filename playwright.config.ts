@@ -3,7 +3,8 @@ import { defineConfig } from '@playwright/test'
 const e2eDatabaseUrl = 'postgresql://toktickit:toktickit@127.0.0.1:5434/toktickit_e2e'
 
 export default defineConfig({
-  testDir: './e2e/lab02',
+  testDir: './e2e',
+  testMatch: process.env.LAB4_E2E === 'true' ? '**/lab04/**/*.spec.ts' : '**/lab02/**/*.spec.ts',
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,

@@ -2,7 +2,10 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest';
 import AuthApplication from './AuthApplication';
 it.each([['REQUESTER', 'My Tickets'], ['IT_STAFF', 'Ticket Queue'], ['ADMINISTRATOR', 'User Management']])('UI-03 shows %s navigation and logs out', async (role, link) => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ user: { name: 'User A', role, mustChangePassword: false }, csrfToken: 'csrf' }) }).mockResolvedValue({ ok: true, status: 204 }));
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ user: { name: 'User A', role, mustChangePassword: false }, csrfToken: 'csrf' }) });
+    if (role === 'ADMINISTRATOR') fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) });
+    fetchMock.mockResolvedValue({ ok: true, status: 204 });
+    vi.stubGlobal('fetch', fetchMock);
     render(<AuthApplication />);
     await screen.findByRole('link', { name: link });
     expect(screen.getByText('User A')).toBeInTheDocument();
@@ -12,7 +15,7 @@ it.each([['REQUESTER', 'My Tickets'], ['IT_STAFF', 'Ticket Queue'], ['ADMINISTRA
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState({}, '', '/login'); });
 it('UI-03 hides protected content during failed logout and allows retry', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ user: { name: 'User A', role: 'ADMINISTRATOR', mustChangePassword: false }, csrfToken: 'csrf' }) }).mockRejectedValueOnce(new Error()).mockResolvedValueOnce({ ok: true, status: 204 }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ user: { name: 'User A', role: 'ADMINISTRATOR', mustChangePassword: false }, csrfToken: 'csrf' }) }).mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) }).mockRejectedValueOnce(new Error()).mockResolvedValueOnce({ ok: true, status: 204 }));
     render(<AuthApplication />);
     await screen.findByRole('link', { name: 'User Management' });
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
