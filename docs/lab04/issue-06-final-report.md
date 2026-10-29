@@ -6,7 +6,7 @@ This evidence records the final Issue 5/6 verification on `feature/lab04-release
 
 ## Evidence collected
 
-- Lab 4 Playwright: **15 passed** across desktop (1280x900), tablet (820x900), and mobile (390x844).
+- Lab 4 Playwright: **15 passed** across desktop (1280x900), tablet (820x900), and mobile (390x844). The committed `test-results/.last-run.json` now records the matching passing run.
 - Screenshots: **12** under `artifacts/lab04/screenshots/`.
 - Client suite: **15 files, 46 tests passed**.
 - Responsive checks: `noHorizontalScroll` passed in the Lab 4 E2E flows.
@@ -19,7 +19,7 @@ LAB4_E2E=true npx playwright test e2e/lab04 --reporter=line
 npm --prefix client test -- --run
 ```
 
-The server suite was attempted without the required `LAB03_TEST_DATABASE_URL` isolated PostgreSQL configuration and therefore is recorded as **Not run** in `tests.md`; its environment errors are not reported as product passes or failures.
+The server suite was rerun with `LAB03_TEST_DATABASE_URL` and completed with **12 test files passed, 5 failed; 55 tests passed, 34 failed**. The failures are recorded as `Fail` in `tests.md`: legacy Lab 2/3 API tests receive `401 AUTHENTICATION_REQUIRED`, and migration tests encounter a missing `User` relation in their legacy setup. This blocks the full-suite requirement and must be fixed before merge.
 
 ## Remaining verification limits
 
