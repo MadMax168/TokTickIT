@@ -21,7 +21,12 @@ export default defineConfig({
       cwd: './server',
       url: 'http://127.0.0.1:3000/api/health',
       reuseExistingServer: false,
-      env: { ...process.env, DATABASE_URL: e2eDatabaseUrl, PORT: '3000' },
+      env: {
+        ...process.env,
+        DATABASE_URL: e2eDatabaseUrl,
+        PORT: '3000',
+        APP_ORIGIN: 'http://127.0.0.1:5173',
+      },
     },
     {
       command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
