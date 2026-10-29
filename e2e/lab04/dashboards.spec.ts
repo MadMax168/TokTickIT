@@ -5,7 +5,7 @@ test('E2E-03 requester dashboard is role-scoped and responsive', async ({ page }
   await login(page, 'niran.somchai@example.test', testInfo)
   await page.getByRole('link', { name: 'Dashboard' }).click()
   await expect(page.getByRole('heading', { name: 'Requester Dashboard' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Recently resolved' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Recently resolved' }).last()).toBeVisible()
   await expect(page.getByRole('button', { name: 'View tickets' }).first()).toBeVisible()
   await noHorizontalScroll(page)
   await screenshot(page, testInfo, 'requester-dashboard', 'dashboard')

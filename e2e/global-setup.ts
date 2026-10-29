@@ -22,4 +22,10 @@ export default async function globalSetup() {
     : { ...process.env, DATABASE_URL: e2eDatabaseUrl, LAB02_SEED: 'true' }
   await runE2eCommand('npx', ['prisma', 'migrate', 'deploy'], serverDirectory, env)
   await runE2eCommand('npm', ['run', 'db:seed'], serverDirectory, env)
+  if (lab4) {
+    await runE2eCommand('docker', [
+      'exec', 'toktickit-e2e-postgres-e2e-1', 'psql', '-U', 'toktickit', '-d', 'toktickit_e2e',
+      '-c', 'UPDATE "User" SET "mustChangePassword" = false;',
+    ])
+  }
 }
