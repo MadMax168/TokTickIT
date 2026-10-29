@@ -3,6 +3,8 @@ import './auth.css';
 import RequesterWorkspace from './RequesterWorkspace';
 import StaffWorkspace from './StaffWorkspace';
 import AdminWorkspace from './AdminWorkspace';
+import RequesterDashboard from '../lab04/RequesterDashboard';
+import StaffDashboard from '../lab04/StaffDashboard';
 type User = {
     id: number;
     name: string;
@@ -16,7 +18,7 @@ type Auth = {
     csrfToken: string;
 };
 const defaults = { REQUESTER: '/tickets', IT_STAFF: '/staff/tickets', ADMINISTRATOR: '/admin/users' };
-const links = { REQUESTER: [['My Tickets', '/tickets'], ['Create Ticket', '/tickets/new']], IT_STAFF: [['Ticket Queue', '/staff/tickets']], ADMINISTRATOR: [['User Management', '/admin/users'], ['Ticket Queue', '/staff/tickets']] };
+const links = { REQUESTER: [['Dashboard', '/dashboard'], ['My Tickets', '/tickets'], ['Create Ticket', '/tickets/new']], IT_STAFF: [['Dashboard', '/staff/dashboard'], ['Ticket Queue', '/staff/tickets']], ADMINISTRATOR: [['Dashboard', '/staff/dashboard'], ['User Management', '/admin/users'], ['Ticket Queue', '/staff/tickets']] };
 export default function AuthApplication() {
     const [auth, setAuth] = useState<Auth | null>(null), [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(''), [success, setSuccess] = useState('');
     const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [current, setCurrent] = useState(''), [next, setNext] = useState(''), [confirm, setConfirm] = useState(''), [show, setShow] = useState(false), [retry, setRetry] = useState(0);
@@ -25,7 +27,7 @@ export default function AuthApplication() {
     const previousPath = useRef<string | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
     const focusField = (name: string) => formRef.current?.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.focus();
-    const move = (value: string) => { window.history.replaceState({}, '', value); setPath(value); };
+    const move = (value: string) => { window.history.replaceState({}, '', value); const next = new URL(value, window.location.origin); setPath(next.pathname + next.search); };
     const clearPasswords = () => { setPassword(''); setCurrent(''); setNext(''); setConfirm(''); };
     const apply = (value: Auth) => {
         if (!value?.user || !Object.hasOwn(defaults, value.user.role))
@@ -190,7 +192,7 @@ export default function AuthApplication() {
     </form>
    </section> : auth && !logoutPending && <>
     <nav aria-label="Application navigation">{links[auth.user.role].map(([label, url]) => <a key={url} href={url} aria-current={path === url ? 'page' : undefined} onClick={e => { e.preventDefault(); move(url); }}>{label}</a>)}<a href="/change-password" onClick={e => { e.preventDefault(); previousPath.current = path; move('/change-password'); }}>Change Password</a></nav>
-    {auth.user.role === 'REQUESTER' ? <RequesterWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : auth.user.role === 'ADMINISTRATOR' && path === '/admin/users' ? <AdminWorkspace path={path} csrfToken={auth.csrfToken} userId={auth.user.id} /> : (auth.user.role === 'IT_STAFF' || path === '/staff/tickets') ? <StaffWorkspace path={path} csrfToken={auth.csrfToken} onNavigate={move} /> : links[auth.user.role].some(([, url]) => path === url) ? <section><h1>{links[auth.user.role].find(([, url]) => path === url)?.[0]}</h1><p>This page is not available yet.</p></section> : <section><h1>Access unavailable</h1><a href={defaults[auth.user.role]}>Return to your home page</a></section>}
+    {auth.user.role === 'REQUESTER' && path === '/dashboard' ? <RequesterDashboard onNavigate={move} /> : (auth.user.role !== 'REQUESTER' && path === '/staff/dashboard') ? <StaffDashboard onNavigate={move} /> : auth.user.role === 'REQUESTER' ? <RequesterWorkspace path={path.includes('?') ? path.split('?')[0] : path} csrfToken={auth.csrfToken} onNavigate={move} /> : auth.user.role === 'ADMINISTRATOR' && path === '/admin/users' ? <AdminWorkspace path={path} csrfToken={auth.csrfToken} userId={auth.user.id} /> : (auth.user.role === 'IT_STAFF' || path.startsWith('/staff/tickets')) ? <StaffWorkspace path={path.includes('?') ? path.split('?')[0] : path} csrfToken={auth.csrfToken} onNavigate={move} /> : links[auth.user.role].some(([, url]) => path === url) ? <section><h1>{links[auth.user.role].find(([, url]) => path === url)?.[0]}</h1><p>This page is not available yet.</p></section> : <section><h1>Access unavailable</h1><a href={defaults[auth.user.role]}>Return to your home page</a></section>}
    </>}
   </>}
  </main>;
